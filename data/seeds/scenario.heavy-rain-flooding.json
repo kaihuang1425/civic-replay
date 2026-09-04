@@ -1,0 +1,174 @@
+{
+  "id": "sb_heavy_rain_flooding",
+  "name": "豪雨／淹水後居民通報與協助",
+  "description": "豪雨警報升級，三民里部分區域開始淹水，居民需收到警報、理解風險、回報並抵達避難所。",
+  "scenario": {
+    "theme": "災害通報與救助",
+    "location": "三民里（Demo Community）",
+    "event": "豪雨警報升級，部分區域開始淹水"
+  },
+  "service": {
+    "steps": [
+      {
+        "id": "alert",
+        "label": "收到警報",
+        "kind": "alert",
+        "intent": "接收豪雨與淹水警報",
+        "channels": ["line"],
+        "requiresTravel": false,
+        "jargon": []
+      },
+      {
+        "id": "understand",
+        "label": "理解警報內容",
+        "kind": "understand",
+        "intent": "看懂警戒級別與該採取的行動",
+        "channels": [],
+        "requiresTravel": false,
+        "jargon": ["紅色警戒", "土石流潛勢溪流", "水平撤離"]
+      },
+      {
+        "id": "find_shelter",
+        "label": "找到避難資訊",
+        "kind": "choose_channel",
+        "intent": "知道最近的避難收容處所位置",
+        "channels": ["local_office", "online"],
+        "requiresTravel": false,
+        "jargon": []
+      },
+      {
+        "id": "prepare",
+        "label": "準備避難",
+        "kind": "prepare",
+        "intent": "準備隨身物資與必要證件",
+        "channels": [],
+        "requiresTravel": false,
+        "jargon": []
+      },
+      {
+        "id": "report",
+        "label": "回報與登記",
+        "kind": "verify_identity",
+        "intent": "向里辦通報所在與人數並完成身分登記",
+        "channels": ["local_office", "online"],
+        "requiresTravel": false,
+        "jargon": []
+      },
+      {
+        "id": "evacuate",
+        "label": "前往避難所",
+        "kind": "obtain_result",
+        "intent": "實際抵達避難收容處所",
+        "channels": [],
+        "requiresTravel": true,
+        "jargon": []
+      }
+    ],
+    "channels": [
+      { "id": "line", "label": "LINE 通知", "requires": ["uses_line"] },
+      { "id": "local_office", "label": "在地里辦 / 現場", "requires": [] },
+      { "id": "online", "label": "線上系統", "requires": ["has_internet"] }
+    ],
+    "eligibilityRules": [
+      { "id": "r1", "text": "設籍或實際居住於警戒區域之居民" }
+    ],
+    "fallbackOptions": []
+  },
+  "personas": [
+    {
+      "id": "general",
+      "name": "一般居民",
+      "descriptor": "30–50 歲 / 雙薪家庭",
+      "primaryChannel": "online",
+      "tags": ["線上熟悉", "時間有限", "中等數位能力"],
+      "conditions": {
+        "age": 40, "living": "with_family", "uses_line": true, "has_smartphone": true,
+        "has_internet": true, "digital_literacy": "normal", "mobility": "normal",
+        "has_vehicle": true, "chinese_reading": "normal", "needs_proxy": false
+      }
+    },
+    {
+      "id": "elderly_alone",
+      "name": "獨居長者",
+      "descriptor": "70+ 歲 / 獨居",
+      "primaryChannel": "local_office",
+      "tags": ["資訊取得困難", "需要協助", "數位能力低"],
+      "conditions": {
+        "age": 78, "living": "alone", "uses_line": false, "has_smartphone": true,
+        "has_internet": false, "digital_literacy": "low", "mobility": "limited",
+        "has_vehicle": false, "chinese_reading": "normal", "needs_proxy": false
+      }
+    },
+    {
+      "id": "new_immigrant",
+      "name": "新住民",
+      "descriptor": "20–45 歲 / 新住民",
+      "primaryChannel": "local_office",
+      "tags": ["語言障礙", "不熟流程", "文件準備困難"],
+      "conditions": {
+        "age": 35, "living": "with_family", "uses_line": true, "has_smartphone": true,
+        "has_internet": true, "digital_literacy": "normal", "mobility": "normal",
+        "has_vehicle": true, "chinese_reading": "limited", "needs_proxy": false
+      }
+    },
+    {
+      "id": "mobility_impaired",
+      "name": "行動不便居民",
+      "descriptor": "20–60 歲",
+      "primaryChannel": "online",
+      "tags": ["行動不便", "網站無障礙需求", "需便民服務"],
+      "conditions": {
+        "age": 45, "living": "with_family", "uses_line": true, "has_smartphone": true,
+        "has_internet": true, "digital_literacy": "normal", "mobility": "limited",
+        "has_vehicle": false, "chinese_reading": "normal", "needs_proxy": false
+      }
+    },
+    {
+      "id": "no_smartphone",
+      "name": "無智慧手機居民",
+      "descriptor": "50+ 歲",
+      "primaryChannel": "local_office",
+      "tags": ["無智慧手機", "簡訊 / 電話為主", "紙本偏好"],
+      "conditions": {
+        "age": 58, "living": "with_family", "uses_line": false, "has_smartphone": false,
+        "has_internet": false, "digital_literacy": "low", "mobility": "normal",
+        "has_vehicle": true, "chinese_reading": "normal", "needs_proxy": false
+      }
+    },
+    {
+      "id": "family_proxy",
+      "name": "家人代辦",
+      "descriptor": "各年齡層",
+      "primaryChannel": "online",
+      "tags": ["代辦需求", "證明文件多", "關係驗證"],
+      "conditions": {
+        "age": 50, "living": "with_family", "uses_line": true, "has_smartphone": true,
+        "has_internet": true, "digital_literacy": "normal", "mobility": "normal",
+        "has_vehicle": true, "chinese_reading": "normal", "needs_proxy": true
+      }
+    }
+  ],
+  "interventions": [],
+  "highlights": {
+    "theme": "豪雨／淹水後居民通報與協助",
+    "serviceGoal": "讓警戒區域居民都能收到警報、理解風險並安全抵達避難所",
+    "coreConstraints": [
+      "資訊管道單一（僅 LINE）",
+      "防災用語理解門檻",
+      "行動與交通限制",
+      "需本人操作 / 驗證"
+    ],
+    "mainChannels": ["LINE 通知", "在地里辦", "線上系統"]
+  },
+  "settings": {
+    "scenarioType": "災害通報與救助",
+    "channels": ["LINE 通知", "在地里辦", "線上系統"],
+    "eligibilityRules": ["設籍或實際居住於警戒區域之居民"],
+    "fallbackOptions": [],
+    "personaCount": 6
+  },
+  "generatedBy": "seed",
+  "userEdited": [],
+  "createdAt": "2026-09-04T00:00:00.000Z",
+  "updatedAt": "2026-09-04T00:00:00.000Z"
+}

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "heavy-rain-flooding",
+    "name": "豪雨／淹水（示範情境）",
+    "description": "固定驗證情境：豪雨警報升級後的居民通報與避難協助流程。",
+    "scenarioDescription": "豪雨警報升級，三民里部分區域開始淹水，居民需要收到警報、確認風險、回報受災狀況並抵達避難所。",
+    "settings": {
+      "scenarioType": "災害通報與救助",
+      "channels": ["LINE 通知", "在地里辦", "線上系統"],
+      "eligibilityRules": ["設籍或實際居住於警戒區域之居民"],
+      "fallbackOptions": [],
+      "personaCount": 6
+    }
+  },
+  {
+    "id": "disaster-relief",
+    "name": "災害救助",
+    "description": "災後居民申請慰助金與救助資源的流程。",
+    "scenarioDescription": "颱風造成住宅淹水損壞，居民需要申請災害救助金與相關補助。",
+    "settings": {
+      "scenarioType": "災後救助給付",
+      "channels": ["線上申請", "臨櫃辦理", "里辦協助"],
+      "eligibilityRules": ["受災且設籍於災區", "住宅實際受損"],
+      "fallbackOptions": ["臨櫃協助", "紙本申請"],
+      "personaCount": 6
+    }
+  },
+  {
+    "id": "childcare-subsidy",
+    "name": "育兒補助",
+    "description": "育有未滿學齡子女家庭申請每月育兒津貼。",
+    "scenarioDescription": "家中有兩歲幼兒，家長想申請育兒津貼，需確認資格、備妥文件並完成線上或臨櫃申請。",
+    "settings": {
+      "scenarioType": "定期性現金給付",
+      "channels": ["線上申請", "區公所臨櫃", "郵寄申請"],
+      "eligibilityRules": ["子女未滿指定年齡", "未領取相同性質給付", "家長與子女設籍"],
+      "fallbackOptions": ["臨櫃協助", "紙本申請", "電話諮詢"],
+      "personaCount": 6
+    }
+  },
+  {
+    "id": "vaccine-booking",
+    "name": "疫苗預約",
+    "description": "居民透過預約系統選擇時段與地點接種疫苗。",
+    "scenarioDescription": "衛生單位開放新一劑疫苗接種，居民需要收到通知、上系統預約時段與地點，並完成報到接種。",
+    "settings": {
+      "scenarioType": "預約制服務",
+      "channels": ["預約網站", "1922 專線", "診所現場"],
+      "eligibilityRules": ["符合本輪接種對象", "距前一劑達間隔"],
+      "fallbackOptions": ["電話預約", "現場候補", "里辦協助預約"],
+      "personaCount": 6
+    }
+  },
+  {
+    "id": "rent-subsidy",
+    "name": "租屋補貼",
+    "description": "符合所得與租賃條件的家戶申請住宅租金補貼。",
+    "scenarioDescription": "租屋家庭想申請住宅租金補貼，需確認所得級距、上傳租賃契約與身分文件並完成線上申請。",
+    "settings": {
+      "scenarioType": "定期性補貼",
+      "channels": ["線上申請系統", "縣市政府臨櫃"],
+      "eligibilityRules": ["家庭所得低於門檻", "有合法租賃契約", "本人或配偶無自有住宅"],
+      "fallbackOptions": ["臨櫃協助", "書面補件"],
+      "personaCount": 6
+    }
+  }
+]

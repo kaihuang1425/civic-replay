@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildStepPrompt > includes the step, persona conditions, state and interventions 1`] = `
+"Scenario: 災害通報與救助 — 豪雨警報升級，部分區域開始淹水 (三民里（Demo Community）).
+Service step under test:
+- id: understand
+- kind: understand
+- label: 理解警報內容
+- resident intent: 看懂警戒級別與該採取的行動
+- terms used: 紅色警戒, 土石流潛勢溪流, 水平撤離
+- channels for this step: line (LINE 通知), local_office (在地里辦 / 現場), online (線上系統)
+- requires physical travel: false
+Resident conditions: {"age":35,"living":"with_family","uses_line":true,"has_smartphone":true,"has_internet":true,"digital_literacy":"normal","mobility":"normal","has_vehicle":true,"chinese_reading":"limited","needs_proxy":false}
+Current citizen state: {"safe":true,"location":"home","aware":false,"understands":null,"evacuation_info":null,"transport":null,"needs_assistance":false}
+Active interventions: none
+Decide whether THIS resident can complete THIS step:
+- "PASS"  — completes it unaided.
+- "NEED_HELP" — cannot alone, but a listed fallback / intervention carries them through.
+- "BLOCKED" — cannot, and nothing listed helps.
+Reply with JSON: { "status", "category" (access|comprehension|action),
+"reason" (one sentence), "evidence" (array of short fact strings),
+"stateChanges" (object of citizen-state keys to update, may be empty) }."
+`;

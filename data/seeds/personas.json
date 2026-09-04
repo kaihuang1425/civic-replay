@@ -1,0 +1,116 @@
+[
+  {
+    "id": "general",
+    "name": "一般居民",
+    "descriptor": "30–50 歲 / 雙薪家庭",
+    "primaryChannel": "online",
+    "tags": ["線上熟悉", "時間有限", "中等數位能力"],
+    "conditions": {
+      "age": 40,
+      "living": "with_family",
+      "uses_line": true,
+      "has_smartphone": true,
+      "has_internet": true,
+      "digital_literacy": "normal",
+      "mobility": "normal",
+      "has_vehicle": true,
+      "chinese_reading": "normal",
+      "needs_proxy": false
+    }
+  },
+  {
+    "id": "elderly_alone",
+    "name": "獨居長者",
+    "descriptor": "70+ 歲 / 獨居",
+    "primaryChannel": "local_office",
+    "tags": ["資訊取得困難", "需要協助", "數位能力低"],
+    "conditions": {
+      "age": 78,
+      "living": "alone",
+      "uses_line": false,
+      "has_smartphone": true,
+      "has_internet": false,
+      "digital_literacy": "low",
+      "mobility": "limited",
+      "has_vehicle": false,
+      "chinese_reading": "normal",
+      "needs_proxy": false
+    }
+  },
+  {
+    "id": "new_immigrant",
+    "name": "新住民",
+    "descriptor": "20–45 歲 / 新住民",
+    "primaryChannel": "local_office",
+    "tags": ["語言障礙", "不熟流程", "文件準備困難"],
+    "conditions": {
+      "age": 35,
+      "living": "with_family",
+      "uses_line": true,
+      "has_smartphone": true,
+      "has_internet": true,
+      "digital_literacy": "normal",
+      "mobility": "normal",
+      "has_vehicle": true,
+      "chinese_reading": "limited",
+      "needs_proxy": false
+    }
+  },
+  {
+    "id": "mobility_impaired",
+    "name": "行動不便居民",
+    "descriptor": "20–60 歲",
+    "primaryChannel": "online",
+    "tags": ["行動不便", "網站無障礙需求", "需便民服務"],
+    "conditions": {
+      "age": 45,
+      "living": "with_family",
+      "uses_line": true,
+      "has_smartphone": true,
+      "has_internet": true,
+      "digital_literacy": "normal",
+      "mobility": "limited",
+      "has_vehicle": false,
+      "chinese_reading": "normal",
+      "needs_proxy": false
+    }
+  },
+  {
+    "id": "no_smartphone",
+    "name": "無智慧手機居民",
+    "descriptor": "50+ 歲",
+    "primaryChannel": "local_office",
+    "tags": ["無智慧手機", "簡訊 / 電話為主", "紙本偏好"],
+    "conditions": {
+      "age": 58,
+      "living": "with_family",
+      "uses_line": false,
+      "has_smartphone": false,
+      "has_internet": false,
+      "digital_literacy": "low",
+      "mobility": "normal",
+      "has_vehicle": true,
+      "chinese_reading": "normal",
+      "needs_proxy": false
+    }
+  },
+  {
+    "id": "family_proxy",
+    "name": "家人代辦",
+    "descriptor": "各年齡層",
+    "primaryChannel": "online",
+    "tags": ["代辦需求", "證明文件多", "關係驗證"],
+    "conditions": {
+      "age": 50,
+      "living": "with_family",
+      "uses_line": true,
+      "has_smartphone": true,
+      "has_internet": true,
+      "digital_literacy": "normal",
+      "mobility": "normal",
+      "has_vehicle": true,
+      "chinese_reading": "normal",
+      "needs_proxy": true
+    }
+  }
+]

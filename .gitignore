@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+coverage/
+
+# Local JSON persistence — runtime data only (seeds live in data/seeds/)
+/data/*.json
+
+.DS_Store
+
+# Design reference material (not part of the codebase)
+/reference/

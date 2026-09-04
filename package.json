@@ -1,0 +1,24 @@
+{
+  "name": "civic-replay",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Civic Replay — public-service scenario rehearsal for residents with real-world constraints",
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "build": "npm -w shared run build",
+    "dev": "npm run build && concurrently -k -n server,web -c blue,magenta \"npm -w server run dev\" \"npm -w web run dev\"",
+    "test": "npm run build && npm -ws --if-present run test",
+    "typecheck": "npm -ws --if-present run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
