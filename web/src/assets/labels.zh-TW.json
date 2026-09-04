@@ -1,0 +1,80 @@
+{
+  "personas": {
+    "senior": "高齡者",
+    "new-parent": "新手家長",
+    "visually-impaired": "視障使用者",
+    "new-resident": "新住民",
+    "low-digital-literacy": "數位能力較弱",
+    "mobility-impaired": "行動不便者",
+    "senior-living-alone": "獨居長者",
+    "student": "學生",
+    "office-worker": "上班族",
+    "family-representative": "家人代辦"
+  },
+  "serviceCategories": {
+    "healthcare": "醫療衛生",
+    "education": "教育學習",
+    "social-welfare": "社會福利",
+    "household-registration": "戶政服務",
+    "transportation": "交通運輸",
+    "environment": "環境資源",
+    "public-safety": "治安安全",
+    "tax-finance": "稅務財政",
+    "employment-labour": "就業勞工",
+    "long-term-care": "長照關懷",
+    "housing": "住宅居住",
+    "other-services": "其他服務"
+  },
+  "status": {
+    "not-started": "未開始",
+    "in-progress": "進行中",
+    "completed": "完成",
+    "blocker": "卡住／問題",
+    "failed": "失敗"
+  },
+  "coreIcons": {
+    "home": "首頁",
+    "services": "服務",
+    "user-personas": "使用者角色",
+    "process-flow": "流程",
+    "run-simulation": "執行模擬",
+    "results": "結果",
+    "insights": "洞察",
+    "adjust-improve": "調整／改善",
+    "export-report": "匯出報告",
+    "settings": "設定",
+    "search": "搜尋",
+    "info": "資訊",
+    "help": "說明",
+    "notifications": "通知",
+    "profile": "個人檔案"
+  },
+  "miscellaneousIcons": {
+    "target": "目標",
+    "analytics": "數據分析",
+    "stakeholders": "利害關係人",
+    "feedback": "意見回饋",
+    "policy-document": "政策文件",
+    "location": "地點",
+    "time": "時間",
+    "link": "連結",
+    "upload": "上傳",
+    "favorite": "收藏"
+  },
+  "emptyStates": {
+    "createScenario": {
+      "title": "尚未建立情境",
+      "body": "點擊下方按鈕開始模擬",
+      "action": "建立新情境"
+    },
+    "noResults": {
+      "title": "找不到相關結果",
+      "body": "試試其他關鍵字"
+    },
+    "startSimulation": {
+      "title": "還沒有模擬紀錄",
+      "body": "開始第一個公共服務預演吧！",
+      "action": "開始模擬"
+    }
+  }
+}

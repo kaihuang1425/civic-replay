@@ -1,5 +1,6 @@
 import type { Sandbox, Template } from "@civic-replay/shared";
 import { useStore } from "../store.js";
+import { CATEGORY_ICONS } from "../assets/index.js";
 
 interface Props {
   description: string;
@@ -108,18 +109,22 @@ export function GenerationSettings({
         快速套用情境範本
       </div>
       <div className="tags" style={{ marginTop: 8 }}>
-        {templates.map((t) => (
-          <button
-            key={t.id}
-            className="chip"
-            onClick={() => {
-              setDescription(t.scenarioDescription);
-              useStore.getState().generate(t.scenarioDescription, t.settings);
-            }}
-          >
-            {t.name}
-          </button>
-        ))}
+        {templates.map((t) => {
+          const icon = CATEGORY_ICONS[t.id];
+          return (
+            <button
+              key={t.id}
+              className="chip"
+              onClick={() => {
+                setDescription(t.scenarioDescription);
+                useStore.getState().generate(t.scenarioDescription, t.settings);
+              }}
+            >
+              {icon && <img src={icon} alt="" className="category-icon" />}
+              {t.name}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

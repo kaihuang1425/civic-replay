@@ -1,11 +1,21 @@
 import { useStore } from "../store.js";
 import { canonicalConditionEntries } from "../conditions.js";
+import { PERSONA_AVATARS, STATUS_ICONS } from "../assets/index.js";
 
-const OC_ICON: Record<string, string> = {
-  PASS: "✅",
-  NEED_HELP: "⚠️",
-  BLOCKED: "❌",
-};
+function PersonaAvatar({ id, name }: { id: string; name: string }) {
+  const avatar = PERSONA_AVATARS[id];
+  if (avatar) {
+    return <img src={avatar} alt="" className="persona-avatar" />;
+  }
+  // Non-canonical persona (custom-added or future AI-generated id): no
+  // illustrated avatar is guessed — show an initials placeholder instead.
+  const initials = name.trim().slice(0, 1) || "?";
+  return (
+    <span className="persona-avatar persona-avatar-initial" aria-hidden="true">
+      {initials}
+    </span>
+  );
+}
 
 export function Personas() {
   const { sandbox, runs, patchSandbox } = useStore();
@@ -47,11 +57,16 @@ export function Personas() {
           const pr = latest?.personas.find((x) => x.personaId === p.id);
           return (
             <div className="persona" key={p.id}>
-              <h3>
-                {p.name}
-                {pr && <span className={`dot ${pr.outcome}`} title={pr.outcome} />}
-              </h3>
-              <div className="desc">{p.descriptor}</div>
+              <div className="persona-head">
+                <PersonaAvatar id={p.id} name={p.name} />
+                <div className="persona-text">
+                  <h3>
+                    {p.name}
+                    {pr && <span className={`dot ${pr.outcome}`} title={pr.outcome} />}
+                  </h3>
+                  <div className="desc">{p.descriptor}</div>
+                </div>
+              </div>
               <div className="tags">
                 {p.tags.map((t) => (
                   <span className="tag" key={t}>
@@ -76,7 +91,8 @@ export function Personas() {
                       const step = sandbox.service.steps.find((s) => s.id === o.stepId);
                       return (
                         <li key={o.stepId}>
-                          {OC_ICON[o.status]} {step?.label ?? o.stepId} — {o.reason}
+                          <img src={STATUS_ICONS[o.status]} alt="" className="status-icon-sm" />{" "}
+                          {step?.label ?? o.stepId} — {o.reason}
                         </li>
                       );
                     })}

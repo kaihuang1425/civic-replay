@@ -1,6 +1,8 @@
 import { INTERVENTION_CATALOG } from "@civic-replay/shared";
 import { useStore } from "../store.js";
 import { Donut } from "./Donut.js";
+import { EmptyState } from "./EmptyState.js";
+import { EMPTY_STATE_IMAGES, labels } from "../assets/index.js";
 
 export function SandboxPreview() {
   const { sandbox, preview, addIntervention, busy } = useStore();
@@ -61,7 +63,11 @@ export function SandboxPreview() {
             </div>
           ))
         ) : (
-          <div className="hint">尚無偵測結果</div>
+          <EmptyState
+            image={EMPTY_STATE_IMAGES.noResults}
+            title={labels.emptyStates.noResults.title}
+            body={labels.emptyStates.noResults.body}
+          />
         )}
       </div>
 

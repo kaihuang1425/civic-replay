@@ -75,6 +75,20 @@ describe("App shell", () => {
     expect(runBtn.disabled).toBe(true);
   });
 
+  it("shows the brand mark in the header with or without a loaded sandbox", async () => {
+    const { container } = mount();
+    expect(container.querySelector(".brand img")).toBeTruthy();
+
+    generate.mockResolvedValue(floodSeed());
+    fireEvent.change(screen.getByLabelText("模擬情境描述"), {
+      target: { value: "豪雨淹水" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /生成沙盤/ }));
+    await waitFor(() => expect(generate).toHaveBeenCalled());
+
+    expect(container.querySelector(".brand img")).toBeTruthy();
+  });
+
   it("shows a quick-template chip from the templates query", async () => {
     mount();
     expect(await screen.findByText("疫苗預約")).toBeTruthy();

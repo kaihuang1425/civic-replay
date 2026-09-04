@@ -1,13 +1,32 @@
 import { useMemo, useState } from "react";
-import type { ReplayDiff } from "@civic-replay/shared";
+import type { OutcomeStatus, ReplayDiff } from "@civic-replay/shared";
 import { api } from "../api.js";
 import { useStore } from "../store.js";
+import { EMPTY_STATE_IMAGES, STATUS_ICONS, labels } from "../assets/index.js";
+import { EmptyState } from "./EmptyState.js";
 
 const OC_LABEL: Record<string, string> = {
   PASS: "🟢 順利完成",
   NEED_HELP: "🟠 需要協助",
   BLOCKED: "🔴 無法完成",
 };
+
+const STATUS_KEY: Record<OutcomeStatus, keyof typeof labels.status> = {
+  PASS: "completed",
+  NEED_HELP: "blocker",
+  BLOCKED: "failed",
+};
+
+function StatusIcon({ outcome }: { outcome: OutcomeStatus }) {
+  return (
+    <img
+      src={STATUS_ICONS[outcome]}
+      alt={labels.status[STATUS_KEY[outcome]]}
+      title={labels.status[STATUS_KEY[outcome]]}
+      className="status-icon-sm"
+    />
+  );
+}
 
 const VALIDATION_NOTICE = "AI 模擬結果，仍需真人／地方單位驗證。";
 
@@ -35,7 +54,13 @@ export function ReplayView({ aiDown }: { aiDown: boolean }) {
     <div className="panel">
       <h2>預演結果</h2>
       {!latest && (
-        <div className="hint">按「執行預演」後，這裡會顯示每位居民走完流程的結果。</div>
+        <EmptyState
+          image={EMPTY_STATE_IMAGES.startSimulation}
+          title={labels.emptyStates.startSimulation.title}
+          body={labels.emptyStates.startSimulation.body}
+          action={labels.emptyStates.startSimulation.action}
+          onAction={() => useStore.getState().runReplay(!aiDown)}
+        />
       )}
 
       {aiDown && (
@@ -58,6 +83,7 @@ export function ReplayView({ aiDown }: { aiDown: boolean }) {
                 onClick={() => setOpen(open === p.personaId ? null : p.personaId)}
               >
                 <span className={`dot ${p.outcome}`} />
+                <StatusIcon outcome={p.outcome} />
                 <strong>{p.personaName}</strong>
                 <span style={{ marginLeft: "auto" }}>{OC_LABEL[p.outcome]}</span>
               </div>

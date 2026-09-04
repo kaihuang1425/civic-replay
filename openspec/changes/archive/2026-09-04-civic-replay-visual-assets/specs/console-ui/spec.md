@@ -1,12 +1,4 @@
-# Console UI Specification
-
-## Purpose
-
-The single-screen Civic Replay Console where a designer describes a service,
-reviews and edits the AI-generated sandbox, runs the replay, and reads the
-outcomes and the before/after diff — matching the layout in `reference/ui.jpg`.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Scenario input and primary actions
 
@@ -173,6 +165,8 @@ results are AI simulations still requiring human / local-authority validation.
 
 - **WHEN** the user views replay results or a diff containing AI-decided outcomes
 - **THEN** the "AI 模擬結果，仍需真人／地方單位驗證" notice is visible
+
+## ADDED Requirements
 
 ### Requirement: No-sandbox empty state
 

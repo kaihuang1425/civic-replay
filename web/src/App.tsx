@@ -8,6 +8,7 @@ import { Personas } from "./components/Personas.js";
 import { SandboxPreview } from "./components/SandboxPreview.js";
 import { ReplayView } from "./components/ReplayView.js";
 import { MySandboxes } from "./components/MySandboxes.js";
+import { LOGO_MARK } from "./assets/index.js";
 
 const PLACEHOLDER = "例如：普發現金、災害救助、育兒補助、疫苗預約";
 
@@ -37,10 +38,12 @@ export function App() {
     <>
       <header className="app-header">
         <div className="brand">
+          <img src={LOGO_MARK} alt="" className="brand-mark" />
           Civic Replay<small>公共服務情境預演</small>
         </div>
         <div className="scenario-bar">
           <textarea
+            id="scenario-input"
             placeholder={PLACEHOLDER}
             value={description}
             onChange={(e) => setDescription(e.target.value)}

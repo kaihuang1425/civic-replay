@@ -1,23 +1,29 @@
 import { useStore } from "../store.js";
+import { EMPTY_STATE_IMAGES, STATUS_ICONS, labels } from "../assets/index.js";
+import { EmptyState } from "./EmptyState.js";
 
-const KIND_ICON: Record<string, string> = {
-  alert: "📣",
-  understand: "🔍",
-  choose_channel: "🔀",
-  prepare: "📋",
-  verify_identity: "🛡",
-  obtain_result: "🎁",
-};
-
-const OC_ICON: Record<string, string> = {
-  PASS: "✅",
-  NEED_HELP: "⚠️",
-  BLOCKED: "❌",
-};
+const OC_LABEL: Record<string, string> = labels.status
+  ? {
+      PASS: labels.status.completed,
+      NEED_HELP: labels.status.blocker,
+      BLOCKED: labels.status.failed,
+    }
+  : {};
 
 export function SandboxFlow() {
   const { sandbox, viewMode, setViewMode, runs } = useStore();
-  if (!sandbox) return <div className="hint">生成或載入沙盤後，這裡會顯示服務流程。</div>;
+  if (!sandbox) {
+    const copy = labels.emptyStates.createScenario;
+    return (
+      <EmptyState
+        image={EMPTY_STATE_IMAGES.createScenario}
+        title={copy.title}
+        body={copy.body}
+        action={copy.action}
+        onAction={() => document.getElementById("scenario-input")?.focus()}
+      />
+    );
+  }
 
   // Show the most recent replay's per-step status for the first non-passing persona.
   const latest = runs.at(-1)?.result;
@@ -56,11 +62,10 @@ export function SandboxFlow() {
           const oc = ocByStep.get(step.id);
           return (
             <div className="step" key={step.id}>
-              <span className="n">{i + 1}</span>{" "}
-              <span className="kind">
-                {KIND_ICON[step.kind] ?? "•"} {step.kind}
-              </span>
-              <div className="lbl">{step.label}</div>
+              <div className="step-head">
+                <span className="n">{i + 1}</span>
+                <span className="lbl">{step.label}</span>
+              </div>
               <div className="intent">{step.intent}</div>
               {step.jargon.length > 0 && (
                 <div className="tags">
@@ -71,7 +76,12 @@ export function SandboxFlow() {
                   ))}
                 </div>
               )}
-              {oc && <div className="oc">{OC_ICON[oc]} {oc}</div>}
+              {oc && (
+                <div className="oc">
+                  <img src={STATUS_ICONS[oc]} alt="" className="status-icon-sm" />{" "}
+                  {OC_LABEL[oc] ?? oc}
+                </div>
+              )}
             </div>
           );
         })}

@@ -58,6 +58,14 @@ button.chip {
   background: var(--chip);
   border-color: transparent;
   padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.category-icon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
 }
 button.chip.active {
   background: var(--brand);
@@ -85,10 +93,18 @@ textarea {
   flex-wrap: wrap;
 }
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 800;
   font-size: 18px;
   color: var(--brand);
   white-space: nowrap;
+}
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 .brand small {
   color: var(--muted);
@@ -106,6 +122,10 @@ textarea {
   resize: none;
   height: 44px;
   line-height: 1.3;
+}
+.scenario-bar button {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .subheader {
@@ -214,6 +234,12 @@ textarea {
 .flow.journey .step {
   flex: none;
 }
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
 .step .n {
   width: 22px;
   height: 22px;
@@ -225,14 +251,17 @@ textarea {
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
+  flex-shrink: 0;
 }
-.step .kind {
-  font-size: 11px;
-  color: var(--muted);
+.status-icon-sm {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  vertical-align: -2px;
 }
 .step .lbl {
   font-weight: 700;
-  margin: 4px 0 2px;
+  margin: 0;
 }
 .step .intent {
   color: var(--muted);
@@ -253,6 +282,33 @@ textarea {
   border-radius: 10px;
   padding: 12px;
 }
+.persona-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.persona-text {
+  flex: 1;
+  min-width: 0;
+}
+.persona-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 15%;
+  background: var(--chip);
+  flex-shrink: 0;
+}
+.persona-avatar-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-dark);
+  font-weight: 700;
+  font-size: 14px;
+}
 .persona h3 {
   margin: 0;
   font-size: 14px;
@@ -263,7 +319,7 @@ textarea {
 .persona .desc {
   color: var(--muted);
   font-size: 12px;
-  margin: 2px 0 8px;
+  margin: 2px 0 0;
 }
 .persona .chan {
   font-size: 12px;
@@ -303,6 +359,7 @@ textarea {
 .risk {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 8px;
   padding: 6px 0;
   border-bottom: 1px dashed var(--line);
@@ -310,9 +367,11 @@ textarea {
 }
 .sev {
   font-size: 11px;
+  line-height: 1.6;
   padding: 1px 7px;
   border-radius: 999px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .sev.high {
   background: #fdecea;
@@ -342,6 +401,30 @@ textarea {
   color: var(--red);
   padding: 6px 20px;
   font-size: 13px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 16px;
+  gap: 6px;
+}
+.empty-state-image {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+.empty-state-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+.empty-state-body {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 10px;
 }
 
 .results-row {
