@@ -1,53 +1,75 @@
-# Civic Replay — 公共服務情境預演
+# Civic Replay｜公共服務情境預演
 
-在公共服務上線、政策變更或事件真正發生以前，先讓 AI 替不同現實條件的居民
-「走一次」完整流程，找出哪些人會被現有服務漏掉、以及修改服務後哪些人因此被接住。
+Civic Replay 是一個**公共服務情境預演工具**。政府在政策或服務上線前，輸入流程、規則與限制，系統會模擬不同居民實際辦事的過程，找出卡關、資格衝突、文件不足或數位障礙，並比較修改前後結果，讓問題在真正影響民眾前先被發現。
 
-自然語言描述服務 → AI 生成沙盤（服務流程 ＋ Persona ＋ 規則）→ 逐一預演每位居民
-→ **PASS / NEED HELP / BLOCKED** → 加入介入措施 → 比較前後 Replay Diff。
+![Civic Replay 介面設計示意：左側設定情境，中間呈現服務流程與居民條件，右側預覽風險與協助措施](docs/images/civic-replay-interface-concept.png)
 
-## Stack
+介面設計示意。圖中的功能與數字用於說明設計，實際操作與預演結果以目前版本為準。
 
-npm workspace monorepo：
+## 怎麼使用
 
-| 套件 | 內容 |
+例如，豪雨警報只透過 LINE 發送，沒有使用 LINE 的居民就可能收不到通知。加入電話通知後，重新預演同一份情境，就能查看哪些居民可以在協助下繼續，以及哪些問題還沒解決。
+
+1. **描述服務**：輸入情境，或選擇「豪雨／淹水」等範本，按「生成沙盤」。沙盤是一份可編輯的情境，包含服務流程、居民條件、規則與備援方式。
+2. **檢查內容**：確認步驟、使用管道與居民條件，調整生成設定。居民資料使用六種預設原型，例如未使用 LINE、行動受限或需要家人代辦。
+3. **執行預演**：查看每位居民在哪一步卡住，以及判斷依據。結果分為可自行完成、需要協助、無法完成。
+4. **修改服務**：加入電話備援、志工協助、多語言說明或家人代辦，再次預演並比較結果。比較時先保持其他設定不變。
+5. **保留結果**：儲存沙盤供之後載入，或匯出 JSON。預演結果另存於伺服器；沙盤匯出檔不包含完整預演紀錄。
+
+## 目前做到哪裡
+
+目前版本可生成與編輯情境、逐步預演居民流程、加入協助措施、比較前後結果，並儲存與匯出沙盤。提供五個範本：災害救助、育兒補助、疫苗預約、租屋補貼、豪雨／淹水。
+
+有 AI 可用時，系統會嘗試依描述生成服務流程；AI 無法回應時，改用範本。「豪雨／淹水」備有完整示範資料，適合第一次操作。其餘範本在備援模式下使用通用流程。
+
+規則引擎負責管道、移動與代辦等已寫入程式的條件；需要判讀文字理解或文件準備難度時，才交給 AI。AI 無法判斷的步驟會標為需要協助，保留人工確認的空間。
+
+這仍是展示版本。開頭描述的是產品用途；目前尚未建立完整的法規、資格衝突與必備文件驗證系統。資格規則有些仍是文字，不能把模擬結果當成正式審查。其他限制與判定方式見[系統架構](docs/ARCHITECTURE.md)。
+
+## 本機啟動
+
+需要 Node.js 20 以上與 npm。在儲存庫根目錄執行：
+
+```sh
+git clone https://github.com/kaihuang1425/civic-replay.git
+cd civic-replay
+npm ci
+npm run dev
+```
+
+開啟 [http://localhost:5173](http://localhost:5173)。後端預設使用 `8787` 埠；沒有 Ollama 也能使用範本與規則預演。Windows PowerShell 若無法執行 `npm`，請改用 `npm.cmd`。
+
+自訂模型、環境變數與固定示範方式見[安裝與執行](docs/SETUP.md)。目前啟動指令不會自動讀取根目錄 `.env`，設定方式請依該文件操作。
+
+## 團隊
+
+**隊名：海底總動員**
+
+**主賽道：AI for Taiwan / Social Impact**
+
+**贊助商挑戰：OpenAI**
+
+| 成員 | 分工 |
 | --- | --- |
-| `shared/` | zod schema ＋ 型別、介入措施 catalog |
-| `server/` | Express API、JSON 檔持久化（無 DB）、Rule Engine ＋ AI Engine、AI provider 抽象層 |
-| `web/` | Vite ＋ React Console（單畫面三欄式介面） |
-| `data/seeds/` | 6 個固定 Persona、5 個情境範本、固定驗證情境 `heavy-rain-flooding` |
+| 吳妤萱（尼莫），隊長 | 團隊溝通與現場執行支援 |
+| 楊彩榕（yang） | 概念討論、關鍵點子發想、方案調整與方向收斂 |
+| 黃奕凱（Eric） | 產品主導與團隊協調、核心概念與系統架構設計、UX/UI、前端開發及整體功能整合 |
+| 鍾慶勳（Ett） | AI 與後端實作、執行邏輯及後端系統串接 |
 
-**Replay Engine**：能 deterministic 判斷的條件先走 Rule Engine；語意 / 理解類判斷才
-交給 AI Engine，且所有 AI 判定都標記 `requiresHumanValidation`。
+成員與主賽道依團隊提供的 9 月 4 日最終確認資料填寫。目前透過 Ollama 使用 OpenAI 的 `gpt-oss` 模型，尚未直接串接 OpenAI API。完整表單內容見[參賽資料](docs/SUBMISSION.md)。
 
-**AI provider**：預設接本機 [Ollama](https://ollama.com)（模型 `gpt-oss:120b-cloud`），
-抽象層設計為之後可換成 OpenAI API 而不動引擎程式碼。
+## 文件
 
-## 開發
+| 想了解的內容 | 文件 |
+| --- | --- |
+| 系統怎麼運作、哪些判斷由 AI 處理 | [系統架構](docs/ARCHITECTURE.md) |
+| 安裝、設定、固定示範與錯誤排查 | [安裝與執行](docs/SETUP.md) |
+| 程式、模型、圖片與示範資料的來源 | [來源與授權](docs/SOURCES.md) |
+| 團隊資料、摘要與繳交進度 | [參賽資料](docs/SUBMISSION.md) |
+| 兩分鐘影片的畫面安排與旁白 | [展示腳本](docs/DEMO_SCRIPT.md) |
 
-```bash
-cp .env.example .env        # 視需要調整 OLLAMA_HOST / OLLAMA_MODEL / AI_PROVIDER
-npm install
-npm run dev                 # server :8787、web :5173
-```
+行為規格位於 `openspec/specs/`；`openspec/changes/archive/` 保留開發當時的提案與驗證紀錄。歷史紀錄中的結果不代表本次重新驗證。
 
-```bash
-npm test        # shared / server / web 全部測試
-npm run typecheck
-npm run build
-```
+## 授權
 
-沒有 Ollama 也能跑：沙盤生成會退回範本、預演步驟以規則引擎降級並標記需人工確認。
-
-## 規格
-
-行為規格以 [OpenSpec](https://github.com/Fission-AI/OpenSpec) 管理，位於
-`openspec/specs/`（capabilities：`sandbox-generation`、`replay-engine`、
-`interventions`、`console-ui`、`ai-provider`）。首次實作的變更封存於
-`openspec/changes/archive/`。
-
-## Scope
-
-Hackathon MVP。不含：真實政府帳號 / 居民資料、operate production 政府網站、
-大量 browser agent、PDF parser、資料庫、法規判定。AI 為模擬結果，仍需真人／
-地方單位驗證。
+程式碼與文件採 [MIT 授權](LICENSE)。非 Lucide 的視覺素材由黃奕凱生成並提供；素材範圍與第三方授權見[來源與授權](docs/SOURCES.md)。
