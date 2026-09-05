@@ -22,6 +22,8 @@ MIT 條文來源可查閱 [Open Source Initiative](https://opensource.org/licens
 
 Lucide 完整聲明保留於 [LUCIDE-LICENSE.txt](../web/src/assets/third-party/LUCIDE-LICENSE.txt)，素材目錄另附[來源說明](../web/src/assets/THIRD_PARTY_NOTICES.md)。
 
+README 的介面設計示意圖由黃奕凱提供，存放於 `docs/images/civic-replay-interface-concept.png`，依上述團隊素材說明隨專案提供。這是設計示意，並非目前版本的實際操作截圖。
+
 ## 套件
 
 版本以 `package-lock.json` 為準。下表涵蓋主要直接依賴；個別套件的完整聲明仍以其隨附授權檔為準。
