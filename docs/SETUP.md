@@ -46,15 +46,36 @@ OLLAMA_MODEL=gpt-oss:120b-cloud
 PORT=8787
 ```
 
+**重要：目前 `npm run dev` / `npm -w server run dev` 並不會自動讀取 `.env`
+檔案。** `server/src/config.ts` 只讀 `process.env`，`server/package.json` 的
+`dev`／`start` 腳本也沒有加 `--env-file` 或任何 `dotenv` 相依套件（本文件已
+實測驗證：`.env` 裡設 `PORT=9999` 後用 `npm run dev` 啟動，伺服器仍印出
+`server on :8787`，代表 `.env` 完全沒被讀取）。也就是說，**`cp .env.example
+.env` 這一步本身不會改變任何行為**——要真的套用非預設值，必須用下面兩種方式
+之一，`.env` 檔目前只能當作「這些變數叫什麼名字、預設值是什麼」的參考文件：
+
+```bash
+# 方式一：在同一行內設定環境變數再啟動（bash / zsh，Linux / macOS）
+OLLAMA_MODEL=llama3.1 PORT=9000 npm run dev
+
+# 方式二：用 Node 內建的 --env-file 旗標（Node ≥ 20.6，需自行修改指令，
+# 專案目前的 npm script 沒有內建這個旗標）
+node --env-file=.env ./node_modules/.bin/tsx server/src/index.ts
+```
+
+Windows PowerShell 請用 `$env:OLLAMA_MODEL="llama3.1"; npm run dev` 的語法。
+
 | 變數 | 說明 |
 | --- | --- |
 | `AI_PROVIDER` | 選擇 AI provider。目前程式只註冊了 `ollama`（`server/src/ai/registry.ts`），填其他值會讓伺服器啟動時直接報錯並列出可用選項 |
 | `OLLAMA_HOST` | Ollama 服務位址。本機預設安裝通常是 `http://localhost:11434` |
 | `OLLAMA_MODEL` | 要使用的模型。預設 `gpt-oss:120b-cloud` 是 **Ollama 的雲端推論模型別名**，不是可以直接 `ollama pull` 的本機模型，需要 Ollama 帳號並開通雲端推論功能才能使用；若沒有這個功能或想完全離線跑，改成任何已 `ollama pull` 過的本機模型即可（例如 `ollama pull llama3.1` 後設 `OLLAMA_MODEL=llama3.1`），不用改任何程式碼 |
-| `PORT` | Express 伺服器埠號，`web` 開發伺服器會把 `/api` 開頭的請求 proxy 到這個埠（見 `web/vite.config.ts`） |
+| `PORT` | Express 伺服器埠號。**注意**：`web/vite.config.ts` 的開發伺服器 proxy 讀的是另一個變數 `SERVER_URL`（預設 `http://localhost:8787`），不是 `PORT`——如果你把 `PORT` 改成別的值，前端的 `/api` 請求不會自動跟過去，必須另外對 `web` 的執行環境設定 `SERVER_URL`（例如 `SERVER_URL=http://localhost:9000 npm -w web run dev`），否則前端會連到舊的埠而出現 API 404 / 連線失敗 |
 
-沒有 `.env` 檔時，`server/src/config.ts` 會用上面列的預設值——`AI_PROVIDER`
-預設就是 `ollama`，即使沒有建立 `.env` 也能啟動（只是 AI 功能會回報離線）。
+沒有 `.env` 檔、也沒有另外用上面兩種方式設定任何環境變數時，`server/src/config.ts`
+會用上面列的預設值——`AI_PROVIDER` 預設就是 `ollama`，一樣能正常啟動（只是 AI
+功能會回報離線）。這也是本文件「驗證紀錄」與「示範情境操作步驟」實際採用的方式：
+沒有建立 `.env`，全部吃預設值。
 
 ## 資料初始化
 
@@ -172,7 +193,9 @@ npm run typecheck   # 三個 workspace 各自 tsc --noEmit
 | 錯誤訊息 / 現象 | 原因 | 解法 |
 | --- | --- | --- |
 | `Cannot find module 'zod'`（build 時） | 只在子目錄跑了 `npm install`，workspace 沒連結好 | 回到 repo 根目錄重新 `npm install` |
-| 伺服器啟動時直接印錯誤並結束（exit code 1） | `.env` 裡 `AI_PROVIDER` 填了未註冊的值 | 改回 `AI_PROVIDER=ollama`（目前唯一註冊的 provider） |
-| `GET /api/health/ai` 回傳 `available:false`，`reason` 提到 `Model … not pulled` | 這是**預期行為**，不是錯誤：`gpt-oss:120b-cloud` 是雲端別名，不會出現在本機 `/api/tags` 清單裡；只要沒有其他錯誤，生成與預演仍會照常呼叫這個模型 | 若想讓健康檢查顯示「模型已就緒」，改用一個已 `ollama pull` 過的本機模型並設定 `OLLAMA_MODEL` |
-| 前端打 `/api/...` 出現 CORS 或 404 | 沒有透過 `npm run dev` / `vite` 啟動，直接開靜態檔案 | 一定要用 `npm run dev` 或 `npm -w web run dev`，讓 Vite 的 proxy 生效 |
+| 改了 `.env` 裡的值，啟動後行為完全沒變 | 上面「環境變數」章節說明過：`.env` 目前不會被自動讀取 | 用 `VAR=值 npm run dev` 的方式在指令前設定環境變數，不要只改 `.env` 檔 |
+| 伺服器啟動時直接印錯誤並結束（exit code 1） | 環境變數 `AI_PROVIDER` 被設成未註冊的值（記得：要用 `AI_PROVIDER=xxx npm run dev` 這種方式設定才會生效，改 `.env` 沒用） | 改成 `AI_PROVIDER=ollama`（目前唯一註冊的 provider）或乾脆不設，讓它用預設值 |
+| `GET /api/health/ai` 回傳 `available:true`，但 `reason` 提到 `Model … not pulled` | 這是**預期行為**，不是錯誤：代表 Ollama 服務本身連得上，只是設定的模型（例如雲端別名 `gpt-oss:120b-cloud`）不在本機 `/api/tags` 清單裡；`available` 仍是 `true`，生成與預演照常會呼叫這個模型 | 若想讓健康檢查完全不顯示警告，改用一個已 `ollama pull` 過的本機模型並設定 `OLLAMA_MODEL`。**注意跟下一列的差別**：這一列是「連得上 Ollama、但模型沒列出來」；下一列才是「連不上 Ollama」 |
+| `GET /api/health/ai` 回傳 `available:false`，`reason` 提到 `Cannot reach Ollama at ...` | 沒有安裝 / 沒有啟動 Ollama，或 `OLLAMA_HOST` 指向錯誤位址——這是本文件「驗證紀錄」中實際遇到的情況 | 這是**預期的降級行為**，不是要修的錯誤：系統會自動退回範本內容與規則引擎，見上方「示範模式」。若想要真正的 AI 功能，安裝並啟動 Ollama |
+| 前端打 `/api/...` 出現 CORS 或 404 | 沒有透過 `npm run dev` / `vite` 啟動，直接開靜態檔案；或改了 `PORT` 但沒有同步設定 `SERVER_URL` | 一定要用 `npm run dev` 或 `npm -w web run dev`，讓 Vite 的 proxy 生效；改了 `PORT` 時記得也設定 `SERVER_URL`（見上方「環境變數」表格） |
 | `npm test` 在 `web` 部分失敗且訊息與 DOM / jsdom 有關 | Node 版本過舊或環境缺少對應相依 | 確認 Node `>= 20`，重新 `npm install` |

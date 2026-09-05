@@ -118,7 +118,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `Scenario` | 情境主題、地點、事件描述 | AI 生成或範本預設 |
 | `Service` / `ServiceStep` | 服務流程步驟（`id`、`label`、`kind`、`intent`、`channels`、`jargon`） | AI 生成或範本預設；`kind` 限定在固定字彙（`alert`/`understand`/`choose_channel`/`prepare`/`verify_identity`/`obtain_result`），規則引擎靠這個欄位判斷 |
-| `Persona` + `PersonaConditions` | 居民的結構化條件（`uses_line`、`digital_literacy`、`mobility`、`chinese_reading`、`needs_proxy` 等） | 固定讀自 `data/seeds/personas.json`（6 種原型），依人數需求循環複製 |
+| `Persona` + `PersonaConditions` | 居民的結構化條件（`uses_line`、`digital_literacy`、`mobility`、`chinese_reading`、`needs_proxy` 等） | 固定讀自 `data/seeds/personas.json`（6 種原型）；AI 生成與通用骨架路徑依人數需求循環複製，`heavy-rain-flooding` 固定 fallback 路徑則直接截斷、不循環複製（見下方「規劃中」章節） |
 | `Intervention` | 介入措施（`type`/`trigger`/`action`/`stepRef`） | 使用者從 `INTERVENTION_CATALOG`（`shared/src/catalog.ts`）挑選加入 |
 | `CitizenState` | 單一居民在預演過程中的累積狀態（`aware`、`understands`、`evacuation_info`⋯） | 由每一步的 `StateChanges` 累加（`engine/citizenState.ts`） |
 | `StepOutcome` | 單一居民在單一步驟的判定結果（`status`/`category`/`reason`/`evidence`/`decidedBy`/`requiresHumanValidation`） | 規則引擎或 AI 引擎產生 |
@@ -180,9 +180,18 @@ sequenceDiagram
 - 6 位居民的原型條件（`data/seeds/personas.json`）與 5 個範本的預設設定
   （`data/seeds/templates.json`）都是團隊事先寫好的固定資料，不是任何引擎算出來
   的。
-- `heavy-rain-flooding` 這個情境的完整服務流程（`data/seeds/scenario.heavy-rain-flooding.json`）也是手工建置、測試鎖定的固定沙盤，不受 AI 生成結果影響——
-  即使 Ollama 在線，選這個範本一樣是讀這份固定 JSON，不會重新呼叫 AI 生成流程
-  本身（但選其他範本或自由輸入文字時仍會呼叫 AI 生成流程）。
+- `heavy-rain-flooding` 這個情境的完整服務流程（`data/seeds/scenario.heavy-rain-flooding.json`）是手工建置、測試鎖定的固定沙盤，但**只有在 AI 呼叫失敗、走
+  `fallbackSandbox()` 這條路徑時才會被讀取**（`generate.ts` 的
+  `closestTemplate()` 只在 fallback 裡被呼叫）。`generateSandbox()`
+  無論使用者選了哪個範本，一律**先**呼叫 AI 產生新的服務流程骨架
+  （`SandboxSkeletonSchema`）；只有這次呼叫拋出例外（Ollama 離線、逾時、結構化
+  輸出驗證失敗）時，才會退回讀取固定 JSON。也就是說：**Ollama 在線時，選「豪雨
+  ／淹水」範本並不保證拿到這份測試鎖定過的內容**——AI 會依情境描述重新生成一份
+  流程，內容與预演結果可能跟固定沙盤不同（甚至每次生成都不同）。目前唯一能穩定
+  重現本文件與 `docs/DEMO_SCRIPT.md` 引用之測試數字的方式，是在 **AI 不可用
+  （降級模式）** 的情況下選擇這個範本；這也是 `docs/SETUP.md`、
+  `docs/DEMO_SCRIPT.md` 建議在沒有連接 Ollama 的環境下錄製 / 驗證示範情境的
+  另一個原因。
 
 ## AI Provider 抽象層（`server/src/ai/`）
 
@@ -245,8 +254,11 @@ provider」理論上只需要新增一個實作並在 `registry.ts` 註冊一行
 
 - **OpenAI（或其他 provider）支援**：`AIProvider` 介面已經為此設計，但目前
   `registry.ts` 只註冊了 Ollama 一種，尚未新增第二個實作。
-- **居民生成器**：目前只有 6 種固定原型，人數設定超過 6 時是循環複製既有原型並
-  加上編號，不是生成新的、獨立的居民樣態。
+- **居民生成器**：目前只有 6 種固定原型，不是生成新的、獨立的居民樣態。AI
+  生成路徑（`generate.ts` 的 `adaptPersonas()`）與通用骨架 fallback 路徑，人數
+  設定超過 6 時是循環複製既有原型並加上編號；但 `heavy-rain-flooding` 專用的
+  fallback 路徑（`fallbackSandbox()` 裡 `template.sandbox` 存在時）是直接
+  `slice(0, personaCount)`，人數設定超過 6 並不會複製，實際人數上限就是 6。
 - **針對其他 4 個範本的完整驗證沙盤**：目前只有 `heavy-rain-flooding` 有手工
   建置並測試鎖定的完整內容；其餘範本在沒有 AI 時只會得到通用骨架（見
   `generate.ts` 的 `fallbackSandbox()`）。
