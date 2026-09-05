@@ -43,4 +43,31 @@ describe("AI Engine", () => {
     // Replay still evaluated later steps for this persona.
     expect(immigrant.outcomes.length).toBeGreaterThan(1);
   });
+
+  it("caches a step's AI decision by prompt so a later call with the same inputs can't flip its answer", async () => {
+    // Regression test: re-running a replay after adding an intervention that
+    // doesn't apply to this persona/step must not change this step's
+    // outcome, even if the (real, non-deterministic) model would answer
+    // differently on a second call for the exact same question.
+    const sb = floodSandbox();
+    const persona = sb.personas.find((p) => p.id === "new_immigrant")!;
+    const baseStep = sb.service.steps.find((s) => s.id === "understand")!;
+    const step = { ...baseStep, id: "understand_cache_test" };
+    const state = initialCitizenState(sb.scenario, persona);
+
+    let calls = 0;
+    const flaky = new FakeProvider().on("Decide whether THIS resident", () => {
+      calls++;
+      return calls === 1
+        ? { status: "PASS", category: "comprehension", reason: "ok", evidence: [], stateChanges: {} }
+        : { status: "BLOCKED", category: "comprehension", reason: "flaky", evidence: [], stateChanges: {} };
+    });
+
+    const first = await evaluateStep(flaky, step, persona, state, sb);
+    const second = await evaluateStep(flaky, step, persona, state, sb);
+
+    expect(first.status).toBe("PASS");
+    expect(second.status).toBe("PASS");
+    expect(calls).toBe(1);
+  });
 });
