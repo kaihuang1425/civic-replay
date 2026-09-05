@@ -1,201 +1,103 @@
-# 環境設置與執行
+# 安裝與執行
 
-本文件的每個指令都已在乾淨的 `npm install` 後於本機實際執行驗證過（結果見
-「驗證紀錄」章節）。若你的結果不同，請先比對 Node / npm 版本。
-
-## 需求版本
-
-| 工具 | 版本 |
-| --- | --- |
-| Node.js | `>= 20`（`package.json` `engines.node`；本文件驗證使用 v22.22.2） |
-| npm | 隨 Node 附帶即可（本文件驗證使用 10.9.7），本專案用 **npm workspaces**，不支援 yarn/pnpm 的 workspace 語法差異 |
-| Ollama（選用） | 若要體驗真正的 AI 生成 / AI 判定，需另外安裝 [Ollama](https://ollama.com)；不裝也能跑完整流程（見「示範模式」） |
-
-不需要資料庫、Docker、或任何雲端帳號即可跑完整條路徑（AI 相關功能除外）。
+先用內建豪雨情境走一次預演，再設定 AI 模型。需要 Node.js 20 以上與 npm；不需要資料庫。
 
 ## 安裝
 
-```bash
-git clone <此儲存庫網址>
+在儲存庫根目錄執行：
+
+```sh
+git clone https://github.com/kaihuang1425/civic-replay.git
 cd civic-replay
-npm install          # 在 repo 根目錄執行，會透過 workspaces 一次安裝 shared/server/web
-```
-
-**常見錯誤**：如果只在 `server/` 或 `web/` 子目錄執行 `npm install`，會出現
-`Cannot find module 'zod'` 或 `Cannot find module '@civic-replay/shared'` 之類
-的錯誤——一定要在 repo 根目錄跑 `npm install`，讓 npm workspaces 把
-`shared/` 連結進 `server`、`web` 的 `node_modules`。
-
-## 環境變數
-
-```bash
-cp .env.example .env
-```
-
-`.env.example` 內容（只有變數名稱與範例值，沒有任何金鑰）：
-
-```bash
-# Which AI provider the server uses. Only "ollama" is registered in the MVP.
-AI_PROVIDER=ollama
-
-# Ollama endpoint and model for the default provider.
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=gpt-oss:120b-cloud
-
-# Server port (web dev server proxies /api here).
-PORT=8787
-```
-
-**重要：目前 `npm run dev` / `npm -w server run dev` 並不會自動讀取 `.env`
-檔案。** `server/src/config.ts` 只讀 `process.env`，`server/package.json` 的
-`dev`／`start` 腳本也沒有加 `--env-file` 或任何 `dotenv` 相依套件（本文件已
-實測驗證：`.env` 裡設 `PORT=9999` 後用 `npm run dev` 啟動，伺服器仍印出
-`server on :8787`，代表 `.env` 完全沒被讀取）。也就是說，**`cp .env.example
-.env` 這一步本身不會改變任何行為**——要真的套用非預設值，必須用下面兩種方式
-之一，`.env` 檔目前只能當作「這些變數叫什麼名字、預設值是什麼」的參考文件：
-
-```bash
-# 方式一：在同一行內設定環境變數再啟動（bash / zsh，Linux / macOS）
-OLLAMA_MODEL=llama3.1 PORT=9000 npm run dev
-
-# 方式二：用 Node 內建的 --env-file 旗標（Node ≥ 20.6，需自行修改指令，
-# 專案目前的 npm script 沒有內建這個旗標）
-node --env-file=.env ./node_modules/.bin/tsx server/src/index.ts
-```
-
-Windows PowerShell 請用 `$env:OLLAMA_MODEL="llama3.1"; npm run dev` 的語法。
-
-| 變數 | 說明 |
-| --- | --- |
-| `AI_PROVIDER` | 選擇 AI provider。目前程式只註冊了 `ollama`（`server/src/ai/registry.ts`），填其他值會讓伺服器啟動時直接報錯並列出可用選項 |
-| `OLLAMA_HOST` | Ollama 服務位址。本機預設安裝通常是 `http://localhost:11434` |
-| `OLLAMA_MODEL` | 要使用的模型。預設 `gpt-oss:120b-cloud` 是 **Ollama 的雲端推論模型別名**，不是可以直接 `ollama pull` 的本機模型，需要 Ollama 帳號並開通雲端推論功能才能使用；若沒有這個功能或想完全離線跑，改成任何已 `ollama pull` 過的本機模型即可（例如 `ollama pull llama3.1` 後設 `OLLAMA_MODEL=llama3.1`），不用改任何程式碼 |
-| `PORT` | Express 伺服器埠號。**注意**：`web/vite.config.ts` 的開發伺服器 proxy 讀的是另一個變數 `SERVER_URL`（預設 `http://localhost:8787`），不是 `PORT`——如果你把 `PORT` 改成別的值，前端的 `/api` 請求不會自動跟過去，必須另外對 `web` 的執行環境設定 `SERVER_URL`（例如 `SERVER_URL=http://localhost:9000 npm -w web run dev`），否則前端會連到舊的埠而出現 API 404 / 連線失敗 |
-
-沒有 `.env` 檔、也沒有另外用上面兩種方式設定任何環境變數時，`server/src/config.ts`
-會用上面列的預設值——`AI_PROVIDER` 預設就是 `ollama`，一樣能正常啟動（只是 AI
-功能會回報離線）。這也是本文件「驗證紀錄」與「示範情境操作步驟」實際採用的方式：
-沒有建立 `.env`，全部吃預設值。
-
-## 資料初始化
-
-不需要手動初始化資料。固定的示範資料（6 位居民、5 個範本、`heavy-rain-flooding`
-完整沙盤）已經以 JSON 檔提交在 `data/seeds/`，伺服器啟動時直接讀取。使用者建立
-的沙盤與預演結果會自動寫入 `data/sandboxes.json`、`data/replay-results.json`
-（第一次寫入時自動建立檔案，這兩個檔案已加進 `.gitignore`，不會被提交）。
-
-## 啟動
-
-```bash
+npm ci
 npm run dev
 ```
 
-這個指令會先建置 `shared/`，再同時啟動：
+`npm run dev` 先建置 `shared`，再啟動後端與前端。開啟 [http://localhost:5173](http://localhost:5173)，後端預設位於 [http://localhost:8787](http://localhost:8787)。PowerShell 若擋下 `npm.ps1`，使用 `npm.cmd` 即可。
 
-- **server**：`http://localhost:8787`（`GET /api/health/ai` 可以確認伺服器有沒有
-  起來）
-- **web**：`http://localhost:5173`（瀏覽器打開這個網址）
+## 設定環境變數
 
-也可以只跑其中一邊：
+目前程式讀取程序的環境變數，**不會自動載入根目錄 `.env`**。`.env.example` 可作為設定參考；只複製成 `.env` 不會讓啟動指令套用內容。
 
-```bash
-npm -w server run dev   # 只跑後端（tsx watch，改檔案會自動重啟）
-npm -w web run dev      # 只跑前端（Vite dev server）
+PowerShell 範例：
+
+```powershell
+$env:AI_PROVIDER = 'ollama'
+$env:OLLAMA_HOST = 'http://localhost:11434'
+$env:OLLAMA_MODEL = 'gpt-oss:120b-cloud'
+npm.cmd run dev
 ```
 
-## 示範模式（沒有 Ollama / 沒有設定 API 金鑰時）
+macOS／Linux shell 範例：
 
-沒有可用的 Ollama 時，系統**不會整個掛掉**，而是自動降級：
-
-- `GET /api/health/ai` 回傳 `{"available": false, "reason": "Cannot reach Ollama at ..."}`
-- 介面右上角會顯示「AI：離線（降級模式）」
-- **生成沙盤**：AI 呼叫失敗後自動退回範本內容——選「豪雨／淹水」範本會得到
-  完整、手工建置的沙盤；其他 4 個範本或自由輸入文字會得到一份通用的 6 步驟骨架
-  （細節見 `docs/ARCHITECTURE.md`）
-- **執行預演**：介面偵測到 AI 離線時，會自動以「不呼叫 AI」的模式執行
-  （對應 `POST /api/replay` 的 `useAi: false`）；規則引擎判不了的步驟一律記為
-  `NEED_HELP`，原因寫「AI 未啟用」，並標記需人工確認
-- **沙盤預覽面板**（風險 Top 5 / 建議介入措施 / 預估分布）本來就不呼叫 AI，
-  有沒有 Ollama 都一樣可以用
-
-也就是說：**不需要任何 API 金鑰或帳號，就能完整跑過「生成 → 預演 → 加介入措施 →
-比較前後」這整個流程**，只是語意判斷的步驟會顯示為「需人工確認」而不是 AI 給出
-具體理由。
-
-## 示範情境操作步驟（豪雨／淹水）
-
-以下每一步都是本文件撰寫時，在沒有 Ollama 的環境下透過 API 實際執行過的結果
-（見下方「驗證紀錄」）：
-
-1. 開啟 `http://localhost:5173`，點選範本卡片「豪雨／淹水」→ 按「✨ 生成沙盤」。
-   預期畫面：中間出現 6 個服務步驟（知道警報 → 理解風險 → 選擇通報管道 →
-   準備資料 → 確認身分 → 抵達避難所，實際文字以介面為準），下方出現 6 張居民
-   卡片。
-2. 按「▶ 執行預演」。因為沒有 Ollama，會自動以規則引擎模式執行。
-   **實測結果**：6 位居民中，1 位 PASS（一般居民）、1 位 NEED_HELP（新住民）、
-   4 位 BLOCKED（獨居長者、行動不便居民、無智慧手機居民、家人代辦）；彙總
-   `{total: 6, reached: 3, ableToAct: 1, unresolved: 4}`。
-3. 點開任一位 BLOCKED 的居民（例如「獨居長者」），預期看到逐步判定：在
-   「知道警報」步驟被判 `BLOCKED`／`access`，原因是只靠居民不會用的管道通知、
-   沒有備援，並附上 root cause 說明。
-4. 在右側「建議介入措施」點「＋ 加入」加入電話備援、志工 / 里長人工確認、多語言
-   說明（或自行從程式加入 `family_proxy_assistance`）。
-5. 再次「執行預演」。**實測結果**：加入電話備援、志工協助、多語言說明三項後，
-   彙總變成 `{reached: 5, ableToAct: 1, unresolved: 1}`（3 位居民從 BLOCKED
-   → NEED_HELP，只剩「家人代辦」仍 BLOCKED，因為她需要的是
-   `family_proxy_assistance`，跟前三項介入措施無關）；再補加
-   `family_proxy_assistance` 後 `unresolved` 會降到 0（全部至少達到
-   NEED_HELP）。
-6. 按「⇄ 比較前後（Replay Diff）」，預期看到 Reached / Able to act / Unresolved
-   三個數字的前後對比，以及每個介入措施「救到了哪些居民」的清單。
-
-## 建置
-
-```bash
-npm run build       # 目前只建置 shared/（server 用 tsx 直接跑 TS，不需要預先建置）
-npm -w web run build   # 建置前端正式版（tsc + vite build），輸出到 web/dist/
-npm -w server run build  # 建置後端（tsc），輸出到 server/dist/
+```sh
+AI_PROVIDER=ollama OLLAMA_HOST=http://localhost:11434 OLLAMA_MODEL=gpt-oss:120b-cloud npm run dev
 ```
 
-## 檢查
-
-```bash
-npm test            # 等同 npm run build 後跑 shared/server/web 三個 workspace 的 vitest
-npm run typecheck   # 三個 workspace 各自 tsc --noEmit
-```
-
-## 驗證紀錄
-
-以下是撰寫本文件時，在此環境（Node v22.22.2、無 Ollama）實際執行的結果：
-
-| 指令 | 結果 |
+| 變數 | 預設值與用途 |
 | --- | --- |
-| `npm install` | 成功（296 個套件） |
-| `npm run build` | 成功 |
-| `npm test` | 全數通過：`shared` 3 個測試、`server` 36 個測試（10 個測試檔）、`web` 22 個測試（8 個測試檔），共 **61 個測試** |
-| `npm run typecheck` | 三個 workspace 皆通過，無錯誤 |
-| `npm -w web run build` | 成功，`web/dist/assets/` 總大小約 1.1 MB |
-| 啟動 server 後 `GET /api/health/ai` | 回傳 `available: false`（因為此環境沒有 Ollama），符合預期的降級行為 |
-| `POST /api/generate`（描述＝豪雨情境原文）| 回傳 `generatedBy: "fallback"` 的完整豪雨沙盤，6 步驟、6 位居民 |
-| 上述沙盤跑 `POST /api/replay {useAi:false}` | 見上方「示範情境操作步驟」第 2 步的實測數字 |
-| 加入 3 項介入措施後重跑 replay + `POST /api/diff` | 見上方「示範情境操作步驟」第 5 步的實測數字 |
+| `AI_PROVIDER` | `ollama`；目前唯一註冊的 provider |
+| `OLLAMA_HOST`／`OLLAMA_MODEL` | `http://localhost:11434`／`gpt-oss:120b-cloud`；模型服務與模型名稱 |
+| `PORT` | `8787`；後端埠號 |
+| `SERVER_URL` | `http://localhost:8787`；Vite 轉送 `/api` 的目標。若改 `PORT`，也要在前端程序設定此值 |
+| `CIVIC_DATA_DIR` | 預設為儲存庫的 `data/`；沙盤與預演結果的儲存位置 |
 
-**未驗證的部分**：因為此環境沒有安裝 / 無法連線到真正的 Ollama 服務，本文件
-沒有重新驗證「AI 在線時」的生成與預演行為；這部分的手動驗證紀錄（2026-09-04，
-使用 `gpt-oss:120b-cloud`）留存在
-`openspec/changes/archive/2026-09-04-civic-replay-mvp/notes.md`。若要自行驗證，
-安裝並啟動 Ollama、設定好 `OLLAMA_MODEL` 後，重複上方「示範情境操作步驟」，
-`decidedBy` 會出現 `"ai"`、`requiresHumanValidation: true` 的判定，且理由文字
-會是模型生成的完整句子而非「AI 未啟用」。
+預設雲端模型透過 Ollama 使用。安裝、登入與執行方式依 [Ollama 雲端模型文件](https://docs.ollama.com/cloud)；若改用本機模型，先確認它能正常回應，再將名稱填入 `OLLAMA_MODEL`。
 
-## 常見錯誤處理
+## 固定示範：豪雨／淹水
 
-| 錯誤訊息 / 現象 | 原因 | 解法 |
+如果要重現下方數字，請使用新的終端機，讓此程序連到一個確定沒有服務監聽的本機埠。以下以 `127.0.0.1:1` 為例；啟動後仍要確認 AI 顯示離線。
+
+```powershell
+$env:OLLAMA_HOST = 'http://127.0.0.1:1'
+npm.cmd run dev
+```
+
+macOS／Linux 可使用 `OLLAMA_HOST=http://127.0.0.1:1 npm run dev`。這只改本次啟動的連線目標，不必停止其他 Ollama 程序。關閉該終端機後，設定不會套用到新終端機。
+
+1. 選「豪雨／淹水」，按「生成沙盤」。確認有六位居民與六個步驟。AI 生成失敗後才會載入固定範本。
+2. 按「執行預演」。固定備援情境的結果為一位 `PASS`、一位 `NEED_HELP`、四位 `BLOCKED`。
+3. 展開獨居長者，查看通知步驟的原因：居民沒有使用 LINE，流程又沒有適用的備援。
+4. 加入「電話 fallback」、「志工 / 里長人工確認」與「多語言說明」。這些是目前介面中的名稱。
+5. 再次預演，按「比較前後（Replay Diff）」。無法完成的人數由四位降為一位；其中三位轉為需要協助，可自行完成的人數仍是一位。
+
+| 指標 | 修改前 | 加入三項措施後 |
 | --- | --- | --- |
-| `Cannot find module 'zod'`（build 時） | 只在子目錄跑了 `npm install`，workspace 沒連結好 | 回到 repo 根目錄重新 `npm install` |
-| 改了 `.env` 裡的值，啟動後行為完全沒變 | 上面「環境變數」章節說明過：`.env` 目前不會被自動讀取 | 用 `VAR=值 npm run dev` 的方式在指令前設定環境變數，不要只改 `.env` 檔 |
-| 伺服器啟動時直接印錯誤並結束（exit code 1） | 環境變數 `AI_PROVIDER` 被設成未註冊的值（記得：要用 `AI_PROVIDER=xxx npm run dev` 這種方式設定才會生效，改 `.env` 沒用） | 改成 `AI_PROVIDER=ollama`（目前唯一註冊的 provider）或乾脆不設，讓它用預設值 |
-| `GET /api/health/ai` 回傳 `available:true`，但 `reason` 提到 `Model … not pulled` | 這是**預期行為**，不是錯誤：代表 Ollama 服務本身連得上，只是設定的模型（例如雲端別名 `gpt-oss:120b-cloud`）不在本機 `/api/tags` 清單裡；`available` 仍是 `true`，生成與預演照常會呼叫這個模型 | 若想讓健康檢查完全不顯示警告，改用一個已 `ollama pull` 過的本機模型並設定 `OLLAMA_MODEL`。**注意跟下一列的差別**：這一列是「連得上 Ollama、但模型沒列出來」；下一列才是「連不上 Ollama」 |
-| `GET /api/health/ai` 回傳 `available:false`，`reason` 提到 `Cannot reach Ollama at ...` | 沒有安裝 / 沒有啟動 Ollama，或 `OLLAMA_HOST` 指向錯誤位址——這是本文件「驗證紀錄」中實際遇到的情況 | 這是**預期的降級行為**，不是要修的錯誤：系統會自動退回範本內容與規則引擎，見上方「示範模式」。若想要真正的 AI 功能，安裝並啟動 Ollama |
-| 前端打 `/api/...` 出現 CORS 或 404 | 沒有透過 `npm run dev` / `vite` 啟動，直接開靜態檔案；或改了 `PORT` 但沒有同步設定 `SERVER_URL` | 一定要用 `npm run dev` 或 `npm -w web run dev`，讓 Vite 的 proxy 生效；改了 `PORT` 時記得也設定 `SERVER_URL`（見上方「環境變數」表格） |
-| `npm test` 在 `web` 部分失敗且訊息與 DOM / jsdom 有關 | Node 版本過舊或環境缺少對應相依 | 確認 Node `>= 20`，重新 `npm install` |
+| `Reached` | 3 | 5 |
+| `Able to act` | 1 | 1 |
+| `Unresolved` | 4 | 1 |
+
+`Reached` 不等於完成；它包含走到最後一步才卡住的居民。各指標算法見[系統架構](ARCHITECTURE.md)。使用 AI 生成內容、改過居民條件或套用不同措施時，結果可能不同。
+
+## 儲存與備份
+
+固定範本在 `data/seeds/`，不必初始化。執行時會建立 `sandboxes.json` 與 `replay-results.json`，存放於 `CIVIC_DATA_DIR` 或預設的 `data/`。這些執行資料不納入 Git。
+
+要備份完整結果，請在停止寫入後備份這兩個檔案。介面的「匯出沙盤」只匯出情境設定，不包含所有預演紀錄。
+
+## 建置與檢查
+
+```sh
+npm test
+npm run typecheck
+npm -w web run build
+npm -w server run build
+```
+
+根目錄 `npm run build` 只建置 `shared`。前端正式版輸出到 `web/dist/`；後端建置到 `server/dist/`。現有 `npm -w server start` 仍使用 `tsx` 執行原始碼。
+
+若要分開啟動，先執行 `npm run build`，再於兩個終端機執行 `npm -w server run dev` 和 `npm -w web run dev`。Vite 的開發代理設定不會自動變成正式部署設定。
+
+## 常見問題
+
+| 現象 | 檢查與處理 |
+| --- | --- |
+| 找不到 `tsc` 或 `@civic-replay/shared` | 在根目錄執行 `npm ci`，再執行 `npm run build` |
+| 修改 `.env` 後沒變化 | 改用上方環境變數指令，重新啟動程序 |
+| AI 顯示離線 | 查看 `/api/health/ai` 的 `reason`，確認 Ollama 位址與服務狀態；仍可使用備援示範 |
+| 提示 `Model … not pulled` | 目前健康檢查只查看 `/api/tags`；模型未列出時仍可能回傳 `available: true`。另行確認模型能否推論 |
+| 改後端埠後 API 失敗 | 同步設定前端的 `SERVER_URL`；檢查兩個程序是否使用相同位址 |
+
+既有開發紀錄保留於 `openspec/changes/archive/2026-09-04-civic-replay-mvp/notes.md`。其中 AI 連線時間與測試數量是當時的紀錄，請以目前執行結果為準。
+
+Windows 若在 exFAT 磁碟遇到 workspace 連結的 `EISDIR` 錯誤，可將儲存庫另行複製到 NTFS 磁碟後安裝。本次在 D 槽 exFAT 安裝失敗，相同程式在 C 槽 NTFS 可完成安裝、測試與建置。
