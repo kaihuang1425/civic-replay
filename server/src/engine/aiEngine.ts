@@ -10,7 +10,7 @@ import {
 import type { AIProvider } from "../ai/types.js";
 import { buildRootCausePrompt, buildStepPrompt } from "./prompt.js";
 
-const DEGRADED_REASON = "undetermined (AI unavailable)";
+const DEGRADED_REASON = "AI 判讀暫時無法使用，需人工確認";
 
 /**
  * Ask the AI Engine to decide a single step. Any failure degrades safely to
@@ -44,7 +44,7 @@ export async function evaluateStep(
       status: "NEED_HELP",
       category: "comprehension",
       reason: DEGRADED_REASON,
-      evidence: ["ai_engine = unavailable"],
+      evidence: ["AI 引擎目前無法使用"],
       decidedBy: "ai",
       requiresHumanValidation: true,
       stateChanges: { needs_assistance: true },

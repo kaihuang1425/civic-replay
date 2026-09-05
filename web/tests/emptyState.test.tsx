@@ -21,4 +21,22 @@ describe("EmptyState", () => {
     fireEvent.click(btn);
     expect(onAction).toHaveBeenCalledOnce();
   });
+
+  it("shows a spinner and disables the action button while busy", () => {
+    const onAction = vi.fn();
+    const { container } = render(
+      <EmptyState
+        image="/x.png"
+        title="標題"
+        body="內文"
+        action="開始"
+        onAction={onAction}
+        busy
+      />,
+    );
+    const btn = screen.getByRole("button") as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(container.querySelector(".spinner")).toBeTruthy();
+    expect(screen.queryByText("開始")).toBeNull();
+  });
 });

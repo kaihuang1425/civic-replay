@@ -1,6 +1,7 @@
 import {
   INTERVENTION_CATALOG,
   type FailureCategory,
+  type InterventionType,
   type OutcomeStatus,
   type PersonaReplay,
   type ReplayDiff,
@@ -12,6 +13,12 @@ const RANK: Record<OutcomeStatus, number> = {
   BLOCKED: 0,
   NEED_HELP: 1,
   PASS: 2,
+};
+
+const STATUS_LABEL: Record<OutcomeStatus, string> = {
+  PASS: "順利完成",
+  NEED_HELP: "需要協助",
+  BLOCKED: "無法完成",
 };
 
 /**
@@ -64,10 +71,10 @@ export function computeDiff(
         to: t.after,
       })),
       summary: moved.length
-        ? `${intervention.label} moved ${moved
-            .map((t) => `${t.personaName} (${t.before}→${t.after})`)
-            .join(", ")}.`
-        : `${intervention.label} did not change any persona's outcome.`,
+        ? `${intervention.label}讓${moved
+            .map((t) => `${t.personaName}（${STATUS_LABEL[t.before]}→${STATUS_LABEL[t.after]}）`)
+            .join("、")}的結果改善。`
+        : `${intervention.label}目前未改變任何居民的結果。`,
     };
   });
 
@@ -88,16 +95,12 @@ export function computeDiff(
   };
 }
 
-function citesIntervention(persona: PersonaReplay, type: string): boolean {
-  return persona.outcomes.some((o) =>
-    o.evidence.some((e) => e.includes(`intervention = ${type}`)),
-  );
+function citesIntervention(persona: PersonaReplay, type: InterventionType): boolean {
+  return persona.outcomes.some((o) => o.citedInterventionType === type);
 }
 
 function anyInterventionCited(persona: PersonaReplay): boolean {
-  return persona.outcomes.some((o) =>
-    o.evidence.some((e) => e.startsWith("intervention = ")),
-  );
+  return persona.outcomes.some((o) => o.citedInterventionType !== undefined);
 }
 
 function baselineFailureCategory(

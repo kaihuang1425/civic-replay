@@ -20,7 +20,7 @@ export const INTERVENTION_CATALOG: Record<
 > = {
   phone_fallback: {
     type: "phone_fallback",
-    label: "電話 fallback",
+    label: "市內電話通知",
     trigger: "line_no_response",
     action: "call_resident",
     defaultStepRef: "alert",

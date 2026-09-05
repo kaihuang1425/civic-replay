@@ -1,5 +1,5 @@
 import { useStore } from "../store.js";
-import { canonicalConditionEntries } from "../conditions.js";
+import { formatConditions } from "../conditions.js";
 import { PERSONA_AVATARS, STATUS_ICONS } from "../assets/index.js";
 
 function PersonaAvatar({ id, name }: { id: string; name: string }) {
@@ -18,32 +18,10 @@ function PersonaAvatar({ id, name }: { id: string; name: string }) {
 }
 
 export function Personas() {
-  const { sandbox, runs, patchSandbox } = useStore();
+  const { sandbox, runs } = useStore();
   if (!sandbox) return <div className="hint">生成沙盤後顯示使用者樣本。</div>;
 
   const latest = runs.at(-1)?.result;
-
-  const addPersona = () => {
-    const n = sandbox.personas.length + 1;
-    patchSandbox(
-      {
-        ...sandbox,
-        personas: [
-          ...sandbox.personas,
-          {
-            id: `custom_${n}_${Date.now()}`,
-            name: `自訂居民 ${n}`,
-            descriptor: "新增樣本",
-            primaryChannel: sandbox.service.channels[0]?.id ?? "in_person",
-            tags: [],
-            conditions: { digital_literacy: "normal", mobility: "normal" },
-          },
-        ],
-        settings: { ...sandbox.settings, personaCount: n },
-      },
-      ["personas"],
-    );
-  };
 
   return (
     <>
@@ -79,10 +57,8 @@ export function Personas() {
               <details>
                 <summary>條件與逐步結果</summary>
                 <ul>
-                  {canonicalConditionEntries(p.conditions).map(([k, v]) => (
-                    <li key={k}>
-                      {k} = {String(v)}
-                    </li>
+                  {formatConditions(p.conditions).map((sentence) => (
+                    <li key={sentence}>{sentence}</li>
                   ))}
                 </ul>
                 {pr && (
@@ -103,10 +79,6 @@ export function Personas() {
           );
         })}
       </div>
-
-      <button className="ghost" style={{ width: "100%", marginTop: 10 }} onClick={addPersona}>
-        ＋ 新增或調整 Persona
-      </button>
     </>
   );
 }

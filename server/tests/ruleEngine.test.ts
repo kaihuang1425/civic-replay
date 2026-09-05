@@ -30,11 +30,12 @@ describe("rule engine", () => {
     expect(r.outcome?.category).toBe("access");
     expect(r.outcome?.decidedBy).toBe("rule");
     expect(r.outcome?.evidence).toEqual(
-      expect.arrayContaining([expect.stringContaining("uses_line = false")]),
+      expect.arrayContaining([expect.stringContaining("使用 LINE")]),
     );
     expect(r.outcome?.evidence).toEqual(
-      expect.arrayContaining([expect.stringContaining("fallback = none")]),
+      expect.arrayContaining([expect.stringContaining("沒有備援方案")]),
     );
+    expect(r.outcome?.citedInterventionType).toBeUndefined();
   });
 
   it("downgrades the alert to NEED_HELP when a phone fallback intervention exists", () => {
@@ -42,7 +43,7 @@ describe("rule engine", () => {
     sb.interventions.push({
       id: "iv1",
       type: "phone_fallback",
-      label: "電話 fallback",
+      label: "市內電話通知",
       trigger: "line_no_response",
       action: "call_resident",
       stepRef: "alert",
@@ -50,8 +51,9 @@ describe("rule engine", () => {
     const s = initialCitizenState(sb.scenario, persona("elderly_alone", sb));
     const r = evaluate(step("alert", sb), persona("elderly_alone", sb), s, sb);
     expect(r.outcome?.status).toBe("NEED_HELP");
+    expect(r.outcome?.citedInterventionType).toBe("phone_fallback");
     expect(r.outcome?.evidence).toEqual(
-      expect.arrayContaining([expect.stringContaining("intervention = phone_fallback")]),
+      expect.arrayContaining([expect.stringContaining("市內電話通知")]),
     );
   });
 

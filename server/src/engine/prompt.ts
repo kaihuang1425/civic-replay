@@ -45,6 +45,7 @@ export function buildStepPrompt(
     `Reply with JSON: { "status", "category" (access|comprehension|action),`,
     `"reason" (one sentence), "evidence" (array of short fact strings),`,
     `"stateChanges" (object of citizen-state keys to update, may be empty) }.`,
+    `Write "reason" and every "evidence" string in Traditional Chinese (繁體中文).`,
   ]
     .filter((line) => line !== ``)
     .join("\n");
@@ -66,5 +67,6 @@ export function buildRootCausePrompt(
     ``,
     `In ONE sentence, state the systemic gap in the public service that caused this`,
     `(not a description of the resident). Reply with JSON: { "rootCause": "..." }.`,
+    `Write "rootCause" in Traditional Chinese (繁體中文).`,
   ].join("\n");
 }

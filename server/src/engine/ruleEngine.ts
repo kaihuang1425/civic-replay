@@ -3,6 +3,7 @@ import {
   type CitizenState,
   type FailureCategory,
   type Intervention,
+  type InterventionType,
   type Persona,
   type PersonaConditions,
   type Sandbox,
@@ -11,6 +12,15 @@ import {
   type StateChanges,
   type StepOutcome,
 } from "@civic-replay/shared";
+
+/** Chinese label for a persona condition key, used in evidence text. */
+const CONDITION_LABELS: Record<string, string> = {
+  uses_line: "使用 LINE",
+  has_smartphone: "智慧型手機",
+  has_internet: "網路連線",
+  has_vehicle: "交通工具",
+  needs_proxy: "他人代辦",
+};
 
 export interface RuleEvaluation {
   decided: boolean;
@@ -62,8 +72,8 @@ export function evaluate(
     ) {
       return UNDECIDED;
     }
-    return decided(step, "PASS", "action", "Resident can prepare what the step requires", [
-      "no preparation barrier",
+    return decided(step, "PASS", "action", "居民可自行準備此步驟所需的文件", [
+      "準備文件無障礙",
     ], {});
   }
 
@@ -73,8 +83,8 @@ export function evaluate(
       step,
       "PASS",
       categoryForStep(step),
-      "Resident completes this step unaided",
-      ["no limiting conditions for this step"],
+      "居民可獨立完成此步驟",
+      ["此步驟無限制條件"],
       passStateChanges(step),
     );
   }
@@ -102,10 +112,10 @@ function evaluateAccess(
       step,
       "PASS",
       "access",
-      `Resident can use ${usable.map((ch) => ch.label).join(" / ")}`,
+      `居民可透過${usable.map((ch) => ch.label).join("、")}完成`,
       [
-        `channels = [${channels.map((ch) => ch.id).join(", ")}]`,
-        `usable_channels = [${usable.map((ch) => ch.id).join(", ")}]`,
+        `可用管道：${channels.map((ch) => ch.label).join("、")}`,
+        `居民可用的管道：${usable.map((ch) => ch.label).join("、")}`,
       ],
       step.kind === "alert" ? { aware: true } : { evacuation_info: "available" },
     );
@@ -116,8 +126,10 @@ function evaluateAccess(
   const evidence = [
     ...channelBlockEvidence(channels, persona),
     assist
-      ? `intervention = ${assist.type}`
-      : `fallback = ${hasFallback ? "generic" : "none"}`,
+      ? `已套用介入措施：${assist.label}`
+      : hasFallback
+        ? "已提供一般備援方案"
+        : "沒有備援方案",
   ];
 
   if (assist) {
@@ -125,11 +137,12 @@ function evaluateAccess(
       step,
       "NEED_HELP",
       "access",
-      `Resident cannot reach this step unaided; ${assist.label} carries them through`,
+      `居民無法自行完成此步驟；${assist.label}可協助完成`,
       evidence,
       step.kind === "alert"
         ? { aware: true, needs_assistance: true }
         : { evacuation_info: "available", needs_assistance: true },
+      assist.type,
     );
   }
   if (hasFallback) {
@@ -137,7 +150,7 @@ function evaluateAccess(
       step,
       "NEED_HELP",
       "access",
-      "Resident cannot reach this step unaided; a fallback option applies",
+      "居民無法自行完成此步驟；適用一般備援方案",
       evidence,
       step.kind === "alert"
         ? { aware: true, needs_assistance: true }
@@ -148,7 +161,7 @@ function evaluateAccess(
     step,
     "BLOCKED",
     "access",
-    "Resident cannot reach this step and no fallback exists",
+    "居民無法完成此步驟，且無備援方案",
     evidence,
     step.kind === "alert" ? { aware: false } : { evacuation_info: "unavailable" },
   );
@@ -157,25 +170,26 @@ function evaluateAccess(
 function evaluateTravel(step: ServiceStep, sandbox: Sandbox): RuleEvaluation {
   const assist = assistanceFor("action", sandbox.interventions, step);
   const evidence = [
-    "mobility = limited",
-    "has_vehicle = false",
-    assist ? `intervention = ${assist.type}` : "transport_assistance = none",
+    "行動能力：不便",
+    "沒有交通工具",
+    assist ? `已套用介入措施：${assist.label}` : "沒有交通協助",
   ];
   if (assist) {
     return decided(
       step,
       "NEED_HELP",
       "action",
-      `Resident cannot travel unaided; ${assist.label} provides assistance`,
+      `居民無法自行前往；${assist.label}提供協助`,
       evidence,
       { transport: "unavailable", needs_assistance: true },
+      assist.type,
     );
   }
   return decided(
     step,
     "BLOCKED",
     "action",
-    "Resident cannot travel to complete this step and no assistance exists",
+    "居民無法前往完成此步驟，且無協助方案",
     evidence,
     { transport: "unavailable", needs_assistance: true },
   );
@@ -186,24 +200,25 @@ function evaluateProxy(step: ServiceStep, sandbox: Sandbox): RuleEvaluation {
     (i) => i.type === "family_proxy_assistance" && refMatches(i, step),
   );
   const evidence = [
-    "needs_proxy = true",
-    assist ? "intervention = family_proxy_assistance" : "proxy_allowed = false",
+    "需要他人代辦",
+    assist ? `已套用介入措施：${assist.label}` : "不允許他人代辦",
   ];
   if (assist) {
     return decided(
       step,
       "NEED_HELP",
       "action",
-      "Identity step needs a proxy; family / proxy assistance is enabled",
+      "此步驟需要代辦；已啟用家人／代理協助",
       evidence,
       { needs_assistance: true },
+      "family_proxy_assistance",
     );
   }
   return decided(
     step,
     "BLOCKED",
     "action",
-    "Identity step requires the resident in person and no proxy is allowed",
+    "此步驟須居民本人親自辦理，且不允許他人代辦",
     evidence,
     { needs_assistance: true },
   );
@@ -223,8 +238,8 @@ function evaluateComprehension(
       step,
       "PASS",
       "comprehension",
-      "Resident reads the information without difficulty",
-      ["chinese_reading = normal", "digital_literacy >= normal"],
+      "居民可自行理解說明內容",
+      ["中文閱讀：一般", "數位能力：一般以上"],
       { understands: true },
     );
   }
@@ -236,12 +251,13 @@ function evaluateComprehension(
       step,
       "NEED_HELP",
       "comprehension",
-      `Resident may not understand the wording unaided; ${assist.label} helps`,
+      `居民可能無法自行理解說明內容；${assist.label}提供協助`,
       [
-        readingLimited ? "chinese_reading = limited" : "digital_literacy = low",
-        `intervention = ${assist.type}`,
+        readingLimited ? "中文閱讀：有限" : "數位能力：低",
+        `已套用介入措施：${assist.label}`,
       ],
       { understands: true, needs_assistance: true },
+      assist.type,
     );
   }
 
@@ -267,13 +283,13 @@ function channelBlockEvidence(
   for (const ch of channels) {
     for (const key of ch.requires) {
       if ((persona.conditions as Record<string, unknown>)[key] === false) {
-        failing.add(`${key} = false`);
+        failing.add(CONDITION_LABELS[key] ? `缺少${CONDITION_LABELS[key]}` : "不符合管道所需條件");
       }
     }
   }
   return [
-    `channels = [${channels.map((ch) => ch.id).join(", ")}]`,
-    ...(failing.size ? [...failing] : ["no usable channel for resident"]),
+    `可用管道：${channels.map((ch) => ch.label).join("、")}`,
+    ...(failing.size ? [...failing] : ["居民沒有可用的管道"]),
   ];
 }
 
@@ -354,6 +370,7 @@ function decided(
   reason: string,
   evidence: string[],
   stateChanges: StateChanges,
+  citedInterventionType?: InterventionType,
 ): RuleEvaluation {
   return {
     decided: true,
@@ -366,6 +383,7 @@ function decided(
       decidedBy: "rule",
       requiresHumanValidation: false,
       stateChanges,
+      citedInterventionType,
     },
   };
 }

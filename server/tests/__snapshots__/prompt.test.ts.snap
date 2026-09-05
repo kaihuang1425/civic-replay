@@ -19,5 +19,6 @@ Decide whether THIS resident can complete THIS step:
 - "BLOCKED" — cannot, and nothing listed helps.
 Reply with JSON: { "status", "category" (access|comprehension|action),
 "reason" (one sentence), "evidence" (array of short fact strings),
-"stateChanges" (object of citizen-state keys to update, may be empty) }."
+"stateChanges" (object of citizen-state keys to update, may be empty) }.
+Write "reason" and every "evidence" string in Traditional Chinese (繁體中文)."
 `;

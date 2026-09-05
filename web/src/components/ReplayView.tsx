@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { OutcomeStatus, ReplayDiff } from "@civic-replay/shared";
 import { api } from "../api.js";
 import { useStore } from "../store.js";
@@ -31,10 +31,9 @@ function StatusIcon({ outcome }: { outcome: OutcomeStatus }) {
 const VALIDATION_NOTICE = "AI 模擬結果，仍需真人／地方單位驗證。";
 
 export function ReplayView({ aiDown }: { aiDown: boolean }) {
-  const { sandbox, runs } = useStore();
+  const { sandbox, runs, busy } = useStore();
   const [open, setOpen] = useState<string | null>(null);
   const [diff, setDiff] = useState<ReplayDiff | null>(null);
-  const [diffErr, setDiffErr] = useState<string | null>(null);
 
   const latest = runs.at(-1)?.result;
   const needsValidation = useMemo(
@@ -46,7 +45,31 @@ export function ReplayView({ aiDown }: { aiDown: boolean }) {
     () => [...runs].sort((a, b) => a.interventionCount - b.interventionCount)[0],
     [runs],
   );
-  const canDiff = runs.length >= 2 && baseline && latest && baseline.result.id !== latest.id;
+  const baselineId = baseline?.result.id;
+  const latestId = latest?.id;
+  const sandboxId = sandbox?.id;
+
+  // Diff the current run against the lowest-intervention-count run so far,
+  // so each persona's row can show its before -> after transition inline.
+  useEffect(() => {
+    if (!sandboxId || !baselineId || !latestId || baselineId === latestId) {
+      setDiff(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .diff(sandboxId, baselineId, latestId)
+      .then((d) => {
+        if (!cancelled) setDiff(d);
+      })
+      .catch(() => {
+        // Best-effort: fall back to showing plain current status per persona.
+        if (!cancelled) setDiff(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sandboxId, baselineId, latestId]);
 
   if (!sandbox) return null;
 
@@ -60,6 +83,7 @@ export function ReplayView({ aiDown }: { aiDown: boolean }) {
           body={labels.emptyStates.startSimulation.body}
           action={labels.emptyStates.startSimulation.action}
           onAction={() => useStore.getState().runReplay(!aiDown)}
+          busy={busy === "replaying"}
         />
       )}
 
@@ -76,117 +100,55 @@ export function ReplayView({ aiDown }: { aiDown: boolean }) {
             可自行完成 {latest.aggregate.ableToAct}/{latest.aggregate.total}、
             無法完成 {latest.aggregate.unresolved}
           </div>
-          {latest.personas.map((p) => (
-            <div key={p.personaId}>
-              <div
-                className="results-row"
-                onClick={() => setOpen(open === p.personaId ? null : p.personaId)}
-              >
-                <span className={`dot ${p.outcome}`} />
-                <StatusIcon outcome={p.outcome} />
-                <strong>{p.personaName}</strong>
-                <span style={{ marginLeft: "auto" }}>{OC_LABEL[p.outcome]}</span>
-              </div>
-              {open === p.personaId && (
-                <div style={{ padding: "6px 0 10px 20px", fontSize: 13 }}>
-                  {p.outcomes.map((o) => {
-                    const step = sandbox.service.steps.find((s) => s.id === o.stepId);
-                    return (
-                      <div key={o.stepId} style={{ marginBottom: 4 }}>
-                        <strong>{step?.label ?? o.stepId}</strong> — {o.status} ·{" "}
-                        {o.category} {o.decidedBy === "ai" ? "(AI)" : "(rule)"}
-                        <div className="hint" style={{ margin: 0 }}>
-                          {o.reason}
-                          {o.evidence.length > 0 && ` ｜ ${o.evidence.join("；")}`}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {p.rootCause && (
-                    <div className="notice" style={{ marginTop: 6 }}>
-                      Root cause：{p.rootCause}
-                    </div>
-                  )}
+          {latest.personas.map((p) => {
+            const transition = diff?.personaTransitions.find(
+              (t) => t.personaId === p.personaId,
+            );
+            return (
+              <div key={p.personaId}>
+                <div
+                  className="results-row"
+                  onClick={() => setOpen(open === p.personaId ? null : p.personaId)}
+                >
+                  <StatusIcon outcome={p.outcome} />
+                  <strong>{p.personaName}</strong>
+                  <span style={{ marginLeft: "auto" }}>
+                    {transition && transition.changed ? (
+                      <>
+                        {OC_LABEL[transition.before]} → {OC_LABEL[transition.after]}
+                      </>
+                    ) : (
+                      OC_LABEL[p.outcome]
+                    )}
+                  </span>
                 </div>
-              )}
-            </div>
-          ))}
+                {open === p.personaId && (
+                  <div style={{ padding: "6px 0 10px 20px", fontSize: 13 }}>
+                    {p.outcomes.map((o) => {
+                      const step = sandbox.service.steps.find((s) => s.id === o.stepId);
+                      return (
+                        <div key={o.stepId} style={{ marginBottom: 4 }}>
+                          <strong>{step?.label ?? o.stepId}</strong> — {o.status} ·{" "}
+                          {o.category} {o.decidedBy === "ai" ? "(AI)" : "(rule)"}
+                          <div className="hint" style={{ margin: 0 }}>
+                            {o.reason}
+                            {o.evidence.length > 0 && ` ｜ ${o.evidence.join("；")}`}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {p.rootCause && (
+                      <div className="notice" style={{ marginTop: 6 }}>
+                        根本原因：{p.rootCause}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
           {needsValidation && <div className="notice">※ {VALIDATION_NOTICE}</div>}
         </>
-      )}
-
-      {canDiff && (
-        <div style={{ marginTop: 14 }}>
-          <button
-            className="ghost"
-            onClick={async () => {
-              setDiffErr(null);
-              try {
-                setDiff(
-                  await api.diff(sandbox.id, baseline!.result.id, latest!.id),
-                );
-              } catch (e) {
-                setDiffErr((e as Error).message);
-              }
-            }}
-          >
-            ⇄ 比較前後（Replay Diff）
-          </button>
-          {diffErr && <div className="banner">⚠ {diffErr}</div>}
-          {diff && <DiffPanel diff={diff} />}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DiffPanel({ diff }: { diff: ReplayDiff }) {
-  const cell = (label: string, before: number, after: number) => (
-    <div className="diff-cell">
-      <div className="hint" style={{ margin: 0 }}>
-        {label}
-      </div>
-      <div className="big">
-        {before} <span className="arrow">→</span> {after}
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{ marginTop: 10 }}>
-      <div className="diff-grid">
-        {cell("Reached", diff.baseline.aggregate.reached, diff.after.aggregate.reached)}
-        {cell(
-          "Able to act",
-          diff.baseline.aggregate.ableToAct,
-          diff.after.aggregate.ableToAct,
-        )}
-        {cell(
-          "Unresolved",
-          diff.baseline.aggregate.unresolved,
-          diff.after.aggregate.unresolved,
-        )}
-      </div>
-
-      <div className="label">Persona 變化</div>
-      {diff.personaTransitions.map((t) => (
-        <div className="trans" key={t.personaId}>
-          {t.improved ? <span className="up">▲</span> : t.changed ? "▼" : "＝"}{" "}
-          {t.personaName}：{t.before} → {t.after}
-        </div>
-      ))}
-
-      <div className="label" style={{ marginTop: 8 }}>
-        介入措施影響
-      </div>
-      {diff.interventionImpacts.map((i) => (
-        <div className="trans" key={i.interventionId}>
-          <strong>{i.label}</strong> — {i.summary}
-        </div>
-      ))}
-
-      {diff.requiresHumanValidation && (
-        <div className="notice">※ {VALIDATION_NOTICE}</div>
       )}
     </div>
   );

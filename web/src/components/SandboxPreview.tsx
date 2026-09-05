@@ -1,11 +1,40 @@
-import { INTERVENTION_CATALOG } from "@civic-replay/shared";
+import { useState } from "react";
+import { INTERVENTION_CATALOG, type Intervention, type InterventionType } from "@civic-replay/shared";
 import { useStore } from "../store.js";
 import { Donut } from "./Donut.js";
 import { EmptyState } from "./EmptyState.js";
 import { EMPTY_STATE_IMAGES, labels } from "../assets/index.js";
 
-export function SandboxPreview() {
-  const { sandbox, preview, addIntervention, busy } = useStore();
+interface SuggestionRow {
+  type: InterventionType;
+  label: string;
+  rationale: string;
+}
+
+/**
+ * The server stops suggesting an intervention type once it's applied (it's
+ * no longer a "suggestion"), so a checked row must be kept visible from the
+ * currently-applied interventions too - otherwise checking it makes the row,
+ * and its checkbox, disappear with no way to uncheck it.
+ */
+function mergeSuggestions(
+  suggested: SuggestionRow[],
+  applied: Intervention[],
+): SuggestionRow[] {
+  const rows = [...suggested];
+  const seen = new Set(rows.map((r) => r.type));
+  for (const iv of applied) {
+    if (seen.has(iv.type)) continue;
+    seen.add(iv.type);
+    rows.push({ type: iv.type, label: iv.label, rationale: "已套用" });
+  }
+  return rows;
+}
+
+export function SandboxPreview({ aiDown }: { aiDown: boolean }) {
+  const { sandbox, preview, addIntervention, removeIntervention, runReplay, busy } = useStore();
+  const [togglingTypes, setTogglingTypes] = useState<Set<InterventionType>>(new Set());
+
   if (!sandbox) {
     return (
       <div className="panel">
@@ -14,6 +43,29 @@ export function SandboxPreview() {
       </div>
     );
   }
+
+  const toggleSuggestion = async (type: InterventionType, checked: boolean) => {
+    setTogglingTypes((s) => new Set(s).add(type));
+    try {
+      if (checked) {
+        await addIntervention(type, INTERVENTION_CATALOG[type].defaultStepRef);
+      } else {
+        const existing = sandbox.interventions.find((iv) => iv.type === type);
+        if (existing) await removeIntervention(existing.id);
+      }
+    } finally {
+      setTogglingTypes((s) => {
+        const next = new Set(s);
+        next.delete(type);
+        return next;
+      });
+    }
+  };
+
+  const suggestionRows = mergeSuggestions(
+    preview?.suggestedInterventions ?? [],
+    sandbox.interventions,
+  );
 
   const h = sandbox.highlights;
   return (
@@ -72,35 +124,47 @@ export function SandboxPreview() {
       </div>
 
       <div className="section">
-        <div className="label">建議介入措施</div>
-        {preview?.suggestedInterventions.length ? (
-          preview.suggestedInterventions.map((s) => (
-            <div className="risk" key={s.type}>
-              <span>
-                {s.label} <span className="hint">— {s.rationale}</span>
-              </span>
-              <button
-                className="chip"
-                disabled={busy === "intervention"}
-                onClick={() =>
-                  addIntervention(s.type, INTERVENTION_CATALOG[s.type].defaultStepRef)
-                }
-              >
-                ＋ 加入
-              </button>
-            </div>
-          ))
+        <div
+          className="label"
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+        >
+          建議介入措施
+          <button
+            className="ghost"
+            disabled={busy === "replaying"}
+            onClick={() => runReplay(!aiDown)}
+          >
+            {busy === "replaying" ? (
+              <>
+                <span className="spinner" aria-hidden="true" />
+                模擬中…
+              </>
+            ) : (
+              "重新模擬"
+            )}
+          </button>
+        </div>
+        {suggestionRows.length ? (
+          suggestionRows.map((s) => {
+            const applied = sandbox.interventions.some((iv) => iv.type === s.type);
+            return (
+              <div className="risk" key={s.type}>
+                <label className="intervention-toggle">
+                  <input
+                    type="checkbox"
+                    checked={applied}
+                    disabled={togglingTypes.has(s.type) || busy === "replaying"}
+                    onChange={(e) => toggleSuggestion(s.type, e.target.checked)}
+                  />
+                  <span>
+                    {s.label} <span className="hint">— {s.rationale}</span>
+                  </span>
+                </label>
+              </div>
+            );
+          })
         ) : (
           <div className="hint">目前沒有進一步建議</div>
-        )}
-        {sandbox.interventions.length > 0 && (
-          <div className="tags" style={{ marginTop: 8 }}>
-            {sandbox.interventions.map((iv) => (
-              <span className="tag" key={iv.id}>
-                ✓ {iv.label} @ {iv.stepRef}
-              </span>
-            ))}
-          </div>
         )}
       </div>
 

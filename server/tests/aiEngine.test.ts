@@ -38,7 +38,7 @@ describe("AI Engine", () => {
     const immigrant = result.personas.find((p) => p.personaId === "new_immigrant")!;
     const understand = immigrant.outcomes.find((o) => o.stepId === "understand")!;
     expect(understand.status).toBe("NEED_HELP");
-    expect(understand.reason).toMatch(/AI unavailable/);
+    expect(understand.reason).toMatch(/AI 判讀暫時無法使用/);
     expect(understand.requiresHumanValidation).toBe(true);
     // Replay still evaluated later steps for this persona.
     expect(immigrant.outcomes.length).toBeGreaterThan(1);

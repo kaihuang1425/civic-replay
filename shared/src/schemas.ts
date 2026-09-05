@@ -173,6 +173,9 @@ export const StepOutcomeSchema = z.object({
   decidedBy: DecidedBy,
   requiresHumanValidation: z.boolean(),
   stateChanges: StateChangesSchema.default({}),
+  /** Set when a rule decision was carried by a specific intervention — lets
+   * diffing attribute impact without parsing human-readable evidence text. */
+  citedInterventionType: InterventionType.optional(),
 });
 export type StepOutcome = z.infer<typeof StepOutcomeSchema>;
 

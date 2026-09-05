@@ -73,7 +73,7 @@ describe("computeDiff", () => {
         {
           id: "iv_phone",
           type: "phone_fallback",
-          label: "電話 fallback",
+          label: "市內電話通知",
           trigger: "line_no_response",
           action: "call_resident",
           stepRef: "alert",

@@ -50,8 +50,8 @@ export async function replay(
           stepId: step.id,
           status: "NEED_HELP",
           category: "comprehension",
-          reason: "undetermined (AI disabled)",
-          evidence: ["ai_engine = disabled"],
+          reason: "尚未判定（AI 功能已停用）",
+          evidence: ["AI 引擎已停用"],
           decidedBy: "ai",
           requiresHumanValidation: true,
           stateChanges: { needs_assistance: true },
@@ -133,15 +133,15 @@ function buildFailurePath(
 
 function ruleRootCause(sandbox: Sandbox, outcomes: StepOutcome[]): string {
   const failed = outcomes.find((o) => o.status !== "PASS");
-  if (!failed) return "No systemic gap identified.";
+  if (!failed) return "未發現系統性缺口。";
   const step = sandbox.service.steps.find((s) => s.id === failed.stepId)!;
   const cat =
     failed.category === "access"
-      ? "the resident cannot reach the service through the available channels"
+      ? "居民無法透過現有管道取得服務"
       : failed.category === "comprehension"
-        ? "the resident cannot understand what the step requires"
-        : "the resident cannot physically carry out the step";
-  return `At "${step.label}", ${cat}, and the service provides no fallback that covers this resident (${failed.evidence.join("; ")}).`;
+        ? "居民無法理解此步驟的說明內容"
+        : "居民無法親自完成此步驟的實際操作";
+  return `在「${step.label}」這一步，${cat}，且服務未提供涵蓋此類居民的備援方案（${failed.evidence.join("；")}）。`;
 }
 
 export function aggregateOutcomes(

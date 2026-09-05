@@ -61,7 +61,14 @@ export function App() {
             disabled={!sandbox || busy === "replaying"}
             onClick={() => runReplay(!aiDown)}
           >
-            {busy === "replaying" ? "預演中…" : "▶ 執行預演"}
+            {busy === "replaying" ? (
+              <>
+                <span className="spinner" aria-hidden="true" />
+                預演中…
+              </>
+            ) : (
+              "▶ 執行預演"
+            )}
           </button>
         </div>
         <MySandboxes onLoad={loadSandbox} />
@@ -116,7 +123,7 @@ export function App() {
           <ReplayView aiDown={!!aiDown} />
         </div>
 
-        <SandboxPreview />
+        <SandboxPreview aiDown={!!aiDown} />
       </div>
     </>
   );

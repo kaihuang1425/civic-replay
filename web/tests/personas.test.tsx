@@ -48,3 +48,34 @@ describe("Persona avatars", () => {
     expect(card.textContent).toContain("自訂居民 7");
   });
 });
+
+describe("Persona panel actions", () => {
+  it("does not render an add/adjust-persona control", () => {
+    useStore.setState({ sandbox: floodSeed(), runs: [] });
+    const { container } = render(<Personas />);
+    expect(container.textContent).not.toContain("新增或調整 Persona");
+    expect(
+      [...container.querySelectorAll("button")].some((b) =>
+        b.textContent?.includes("Persona"),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("Persona card conditions", () => {
+  it("renders conditions as human-readable Chinese sentences, not key = value pairs", () => {
+    useStore.setState({ sandbox: floodSeed(), runs: [] });
+    const { container } = render(<Personas />);
+    const card = [...container.querySelectorAll(".persona")].find((el) =>
+      el.textContent?.includes("獨居長者"),
+    )!;
+    const text = card.textContent ?? "";
+
+    for (const sentence of ["年齡 78 歲", "獨居", "沒有使用 LINE", "數位能力：低"]) {
+      expect(text).toContain(sentence);
+    }
+    expect(text).not.toMatch(/[a-z_]+ = /);
+    expect(text).not.toContain("digital_literacy");
+    expect(text).not.toContain("low");
+  });
+});
