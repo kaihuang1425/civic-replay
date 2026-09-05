@@ -464,6 +464,12 @@ textarea {
   border-bottom: 1px solid var(--line);
   cursor: pointer;
 }
+.results-row .chevron {
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
 .dot {
   width: 12px;
   height: 12px;

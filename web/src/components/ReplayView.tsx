@@ -17,6 +17,17 @@ const STATUS_KEY: Record<OutcomeStatus, keyof typeof labels.status> = {
   BLOCKED: "failed",
 };
 
+const CATEGORY_LABEL: Record<string, string> = {
+  access: "管道",
+  comprehension: "理解",
+  action: "行動",
+};
+
+const DECIDED_BY_LABEL: Record<string, string> = {
+  ai: "AI 判讀",
+  rule: "規則判定",
+};
+
 function StatusIcon({ outcome }: { outcome: OutcomeStatus }) {
   return (
     <img
@@ -121,6 +132,9 @@ export function ReplayView({ aiDown }: { aiDown: boolean }) {
                       OC_LABEL[p.outcome]
                     )}
                   </span>
+                  <span className="chevron" aria-hidden="true">
+                    {open === p.personaId ? "▾" : "▸"}
+                  </span>
                 </div>
                 {open === p.personaId && (
                   <div style={{ padding: "6px 0 10px 20px", fontSize: 13 }}>
@@ -128,8 +142,10 @@ export function ReplayView({ aiDown }: { aiDown: boolean }) {
                       const step = sandbox.service.steps.find((s) => s.id === o.stepId);
                       return (
                         <div key={o.stepId} style={{ marginBottom: 4 }}>
-                          <strong>{step?.label ?? o.stepId}</strong> — {o.status} ·{" "}
-                          {o.category} {o.decidedBy === "ai" ? "(AI)" : "(rule)"}
+                          <strong>{step?.label ?? o.stepId}</strong> —{" "}
+                          {labels.status[STATUS_KEY[o.status]]}・
+                          {CATEGORY_LABEL[o.category] ?? o.category}（
+                          {DECIDED_BY_LABEL[o.decidedBy] ?? o.decidedBy}）
                           <div className="hint" style={{ margin: 0 }}>
                             {o.reason}
                             {o.evidence.length > 0 && ` ｜ ${o.evidence.join("；")}`}

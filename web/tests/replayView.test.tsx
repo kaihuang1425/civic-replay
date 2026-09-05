@@ -1,6 +1,6 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PersonaReplay, ReplayResult } from "@civic-replay/shared";
+import type { PersonaReplay, ReplayResult, StepOutcome } from "@civic-replay/shared";
 import { ReplayView } from "../src/components/ReplayView.js";
 import { STATUS_ICONS, labels } from "../src/assets/index.js";
 import { useStore } from "../src/store.js";
@@ -15,11 +15,15 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
-function personaResult(id: string, outcome: PersonaReplay["outcome"]): PersonaReplay {
+function personaResult(
+  id: string,
+  outcome: PersonaReplay["outcome"],
+  outcomes: StepOutcome[] = [],
+): PersonaReplay {
   return {
     personaId: id,
     personaName: id,
-    outcomes: [],
+    outcomes,
     finalState: {
       safe: true,
       location: "home",
@@ -32,6 +36,19 @@ function personaResult(id: string, outcome: PersonaReplay["outcome"]): PersonaRe
     outcome,
     failurePath: null,
     rootCause: null,
+  };
+}
+
+function stepOutcome(overrides: Partial<StepOutcome> & { stepId: string }): StepOutcome {
+  return {
+    status: "NEED_HELP",
+    category: "access",
+    reason: "測試原因",
+    evidence: [],
+    decidedBy: "rule",
+    requiresHumanValidation: false,
+    stateChanges: {},
+    ...overrides,
   };
 }
 
@@ -153,5 +170,65 @@ describe("ReplayView before/after transition", () => {
     render(<ReplayView aiDown={false} />);
     expect(screen.queryByText(/比較前後/)).toBeNull();
     expect(diff).not.toHaveBeenCalled();
+  });
+});
+
+describe("ReplayView row disclosure and step detail", () => {
+  it("shows a disclosure arrow that flips between collapsed and expanded", () => {
+    const sandbox = floodSeed();
+    useStore.setState({
+      sandbox,
+      runs: [{ fingerprint: "fp0", interventionCount: 0, result: result([personaResult("p1", "PASS")]) }],
+    });
+    const { container } = render(<ReplayView aiDown={false} />);
+
+    const row = container.querySelector(".results-row")!;
+    expect(row.querySelector(".chevron")?.textContent).toBe("▸");
+
+    fireEvent.click(row);
+    expect(row.querySelector(".chevron")?.textContent).toBe("▾");
+
+    fireEvent.click(row);
+    expect(row.querySelector(".chevron")?.textContent).toBe("▸");
+  });
+
+  it("renders the expanded step-detail line entirely in Chinese for both rule- and AI-decided outcomes", () => {
+    const sandbox = floodSeed();
+    const step = sandbox.service.steps[0]!;
+    const outcomes = [
+      stepOutcome({ stepId: step.id, status: "NEED_HELP", category: "access", decidedBy: "rule" }),
+      stepOutcome({
+        stepId: "understand_ai",
+        status: "BLOCKED",
+        category: "comprehension",
+        decidedBy: "ai",
+      }),
+    ];
+    useStore.setState({
+      sandbox,
+      runs: [
+        {
+          fingerprint: "fp0",
+          interventionCount: 0,
+          result: result([personaResult("p1", "BLOCKED", outcomes)]),
+        },
+      ],
+    });
+    const { container } = render(<ReplayView aiDown={false} />);
+
+    fireEvent.click(container.querySelector(".results-row")!);
+
+    const detail = container.textContent ?? "";
+    expect(detail).toContain("卡住／問題");
+    expect(detail).toContain("管道");
+    expect(detail).toContain("規則判定");
+    expect(detail).toContain("失敗");
+    expect(detail).toContain("理解");
+    expect(detail).toContain("AI 判讀");
+
+    // No raw English enum values or English decided-by markers leaked through.
+    expect(detail).not.toMatch(/NEED_HELP|BLOCKED|\baccess\b|\bcomprehension\b/);
+    expect(detail).not.toContain("(rule)");
+    expect(detail).not.toContain("(AI)");
   });
 });
